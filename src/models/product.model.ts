@@ -1,6 +1,19 @@
-const mongoose = require('mongoose');
+import mongoose, { Document, Schema } from 'mongoose';
 
-const productSchema = new mongoose.Schema({
+export interface IProduct {
+    name: string;
+    description: string;
+    price: number;
+    stockQuantity: number;
+    category: string;
+    isActive: boolean;
+    lastUpdated: Date;
+}
+
+export interface IProductDocument extends IProduct, Document {}
+
+// Das Schema bleibt weitgehend unverändert
+const productSchema = new Schema<IProductDocument>({
     name: {
         type: String,
         required: [true, 'Product name is required'],
@@ -34,7 +47,7 @@ const productSchema = new mongoose.Schema({
         default: Date.now
     }
 }, {
-    timestamps: true // Automatically adds createdAt and updatedAt fields
+    timestamps: true
 });
 
-module.exports = mongoose.model('Product', productSchema);
+export const Product = mongoose.model<IProductDocument>('Product', productSchema);

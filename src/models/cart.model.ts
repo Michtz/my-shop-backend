@@ -1,8 +1,22 @@
-const mongoose = require('mongoose');
+import { Document, Schema, model } from 'mongoose';
 
-const cartItemSchema = new mongoose.Schema({
+export interface ICartItem {
+    productId: string;
+    quantity: number;
+    price: number;
+}
+export interface ICart extends Document {
+    userId: string;
+    items: ICartItem[];
+    total: number;
+    createdAt: Date;
+    calculateTotal: () => number;
+}
+
+const cartItemSchema = new Schema<ICartItem>({
+    // @ts-ignore
     productId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: 'Product',
         required: true
     },
@@ -18,7 +32,7 @@ const cartItemSchema = new mongoose.Schema({
     }
 });
 
-const cartSchema = new mongoose.Schema({
+const cartSchema = new Schema<ICart>({
     userId: {
         type: String,
         required: true
@@ -36,7 +50,7 @@ const cartSchema = new mongoose.Schema({
     }
 });
 
-cartSchema.methods.calculateTotal = function() {
+cartSchema.methods.calculateTotal = function(this: ICart): number {
     this.total = this.items.reduce((sum, item) => {
         return sum + (item.price * item.quantity);
     }, 0);
@@ -48,4 +62,4 @@ cartSchema.pre('save', function(next) {
     next();
 });
 
-module.exports = mongoose.model('Cart', cartSchema);
+export const Cart = model<ICart>('Cart', cartSchema);
