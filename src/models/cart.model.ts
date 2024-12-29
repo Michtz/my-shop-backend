@@ -1,4 +1,5 @@
 import { Document, Schema, model } from 'mongoose';
+import {Request} from "express";
 
 export interface ICartItem {
     productId: string;
@@ -11,6 +12,17 @@ export interface ICart extends Document {
     total: number;
     createdAt: Date;
     calculateTotal: () => number;
+}
+
+export interface CartRequest extends Request {
+    params: {
+        userId: string;
+        productId: string;
+    };
+    body: {
+        productId: string;
+        quantity?: number;
+    };
 }
 
 const cartItemSchema = new Schema<ICartItem>({

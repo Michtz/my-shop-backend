@@ -7,23 +7,10 @@ import {
     updateStock,
     deleteProduct
 } from '../controllers/product.controller';
+import {ProductRequest} from "../models/product.model";
 
 const router = Router();
 
-interface ProductRequest extends Request {
-    params: {
-        id?: string;
-    };
-    body: {
-        name?: string;
-        description?: string;
-        price?: number;
-        stockQuantity?: number;
-        category?: string;
-    };
-}
-
-// Base route: /api/products
 router.route('/')
     .get((req: Request, res: Response) => getAllProducts(req, res))
     .post((req: ProductRequest, res: Response) => createProduct(req, res));

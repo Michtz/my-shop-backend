@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import {Request} from "express";
 
 export interface IProduct {
     name: string;
@@ -10,9 +11,21 @@ export interface IProduct {
     lastUpdated: Date;
 }
 
+export interface ProductRequest extends Request {
+    params: {
+        id?: string;
+    };
+    body: {
+        name?: string;
+        description?: string;
+        price?: number;
+        stockQuantity?: number;
+        category?: string;
+    };
+}
+
 export interface IProductDocument extends IProduct, Document {}
 
-// Das Schema bleibt weitgehend unverändert
 const productSchema = new Schema<IProductDocument>({
     name: {
         type: String,

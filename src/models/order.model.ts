@@ -1,14 +1,28 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import {Request} from "express";
 
-// Interfaces für die Datenstrukturen
-interface IShippingAddress {
+export interface IShippingAddress {
     street: string;
     city: string;
     zipCode: string;
     country: string;
 }
 
-interface IOrderItem {
+export interface OrderRequest extends Request {
+    params: {
+        userId?: string;
+        orderId?: string;
+    };
+    body: {
+        cartId?: string;
+        status?: Status;
+        shippingDetails?: IShippingAddress;
+    };
+}
+
+export type Status = "pending" | "processing" | "shipped" | "delivered" | "cancelled" | undefined
+
+export interface IOrderItem {
     productId: mongoose.Types.ObjectId;
     quantity: number;
     price: number;

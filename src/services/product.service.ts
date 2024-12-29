@@ -1,20 +1,17 @@
 import { Product, IProduct, IProductDocument } from '../models/product.model';
 
-// Interface für die Antwortstruktur
 export interface ProductResponse {
     success: boolean;
     data?: IProductDocument | IProductDocument[] | null;
     error?: string;
 }
 
-// Interface für Filter-Optionen
 export interface ProductFilters {
     isActive?: boolean;
     category?: string;
     [key: string]: any;
 }
 
-// Einzelne Funktionen statt einer Klasse
 export const getAllProducts = async (filters: ProductFilters = {}): Promise<ProductResponse> => {
     try {
         const query = { isActive: true, ...filters };
@@ -45,6 +42,13 @@ export const getProductById = async (productId: string): Promise<ProductResponse
 
 export const createProduct = async (productData: Partial<IProduct>): Promise<ProductResponse> => {
     try {
+        const existingProduct = await Product.findOne({ name: productData.name });
+        if (existingProduct) {
+            return {
+                success: false,
+                error: 'A product with this name already exists.',
+            };
+        }
         const product = await Product.create(productData);
         return { success: true, data: product };
     } catch (error) {
