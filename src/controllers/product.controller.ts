@@ -1,16 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import * as ProductService from '../services/product.service';
-import { IProduct } from '../models/product.model';
-
-interface ProductRequest extends Request {
-    params: {
-        id?: string;
-    };
-    body: Partial<IProduct> & {
-        quantity?: number;
-    };
-}
+import {ProductRequest} from "../models/product.model";
 
 export const getAllProducts = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -97,7 +88,7 @@ export const updateProduct = async (req: ProductRequest, res: Response): Promise
 export const updateStock = async (req: ProductRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { quantity } = req.body;
+        const { stockQuantity } = req.body;
 
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             res.status(400).json({
@@ -107,7 +98,7 @@ export const updateStock = async (req: ProductRequest, res: Response): Promise<v
             return;
         }
 
-        if (typeof quantity !== 'number') {
+        if (typeof stockQuantity !== 'number') {
             res.status(400).json({
                 success: false,
                 error: 'Quantity must be a number'
@@ -115,7 +106,7 @@ export const updateStock = async (req: ProductRequest, res: Response): Promise<v
             return;
         }
 
-        const result = await ProductService.updateStock(id, quantity);
+        const result = await ProductService.updateStock(id, stockQuantity);
         const status = result.success ? 200 : result.error === 'Product not found' ? 404 : 500;
         res.status(status).json(result);
     } catch (error) {

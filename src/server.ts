@@ -11,17 +11,17 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/test', (req: Request, res: Response) => {
-    res.json({ message: 'backend is working' });
+  res.json({ message: 'backend is working' });
 });
 
 app.get('/', (req: Request, res: Response) => {
-    res.json({
-        message: 'Welcome to myShop',
-        endpoints: {
-            test: '/test',
-            products: '/api/products',
-        },
-    });
+  res.json({
+    message: 'Welcome to myShop',
+    endpoints: {
+      test: '/test',
+      products: '/api/products',
+    },
+  });
 });
 
 import productRoutes from './routes/product.routes';
@@ -36,12 +36,11 @@ app.use('/api/orders', orderRoutes);
 const PORT = process.env.PORT || 4200;
 
 mongoose
-    .connect(process.env.MONGODB_URI || '')
-    .then(() => {
-        app.listen(PORT, () => {
-            console.log(`Server is running on port: ${PORT}`);
-            console.log('MongoDB is connected');
-        });
-    })
-    .catch((err: Error) => console.error('MongoDB error:', err));
-
+  .connect(process.env.MONGODB_URI || '')
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server is running on: http://localhost:${PORT}`);
+      console.log('MongoDB is connected');
+    });
+  })
+  .catch((err: Error) => console.error('MongoDB error:', err));
