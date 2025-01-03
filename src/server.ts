@@ -33,6 +33,9 @@ app.use('/api/cart', cartRoutes);
 import orderRoutes from './routes/order.routes';
 app.use('/api/orders', orderRoutes);
 
+import sessionRoutes from './routes/session.routes';
+app.use('/api/sessions', sessionRoutes);
+
 const PORT = process.env.PORT || 4200;
 
 mongoose
