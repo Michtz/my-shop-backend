@@ -31,7 +31,7 @@ import cartRoutes from './routes/cart.routes';
 app.use('/api/cart', cartRoutes);
 
 import orderRoutes from './routes/order.routes';
-app.use('/api/orders', orderRoutes);
+app.use('/api/order', orderRoutes);
 
 import sessionRoutes from './routes/session.routes';
 app.use('/api/sessions', sessionRoutes);

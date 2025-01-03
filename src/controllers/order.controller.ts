@@ -22,10 +22,10 @@ export const createOrder = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const { userId } = req.params;
-    const { cartId, shippingDetails } = req.body;
+    const sessionId = req.params.sessionId;
+    const { shippingDetails } = req.body;
 
-    if (!userId || !cartId || !shippingDetails) {
+    if (!sessionId || !shippingDetails) {
       res.status(400).json({
         success: false,
         error: 'Missing required fields',
@@ -33,11 +33,7 @@ export const createOrder = async (
       return;
     }
 
-    const result = await OrderService.createOrder(
-      userId,
-      cartId,
-      shippingDetails,
-    );
+    const result = await OrderService.createOrder(sessionId, shippingDetails);
     res.status(result.success ? 201 : 400).json(result);
   } catch (error) {
     res.status(500).json({
@@ -46,7 +42,7 @@ export const createOrder = async (
     });
   }
 };
-
+/*
 export const getOrderById = async (
   req: OrderRequest,
   res: Response,
@@ -121,4 +117,4 @@ export const updateOrderStatus = async (
       error: 'Error updating order status',
     });
   }
-};
+};*/

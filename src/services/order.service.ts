@@ -2,6 +2,7 @@ import { Order, IOrder } from '../models/order.model';
 import { Cart, ICart } from '../models/cart.model';
 import * as ProductService from './product.service';
 import mongoose from 'mongoose';
+import { Session } from '../models/session.model';
 
 export interface OrderResponse {
   success: boolean;
@@ -32,20 +33,16 @@ export const allOrders = async () => {
     };
   }
 };
-
 export const createOrder = async (
-  userId: string,
-  cartId: string,
+  sessionId: string,
   shippingDetails: ShippingDetails,
 ): Promise<OrderResponse> => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(cartId)) {
-      return { success: false, error: 'Invalid cart ID' };
-    }
+    const cart: ICart | null = await Cart.findOne({ sessionId });
+    console.log('Cart Data:', JSON.stringify(cart, null, 2));
 
-    const cart: ICart | null = await Cart.findById(cartId);
-    if (!cart || cart.userId !== userId) {
-      return { success: false, error: 'Invalid cart' };
+    if (!cart) {
+      return { success: false, error: 'Cart not found' };
     }
 
     for (const item of cart.items) {
@@ -58,18 +55,18 @@ export const createOrder = async (
           error: `Product ${item.productId} not found`,
         };
       }
-      // @ts-ignore
-      if (productResponse.data.stockQuantity < item.quantity) {
+      if (
+        'stockQuantity' in productResponse.data &&
+        productResponse.data.stockQuantity < item.quantity
+      ) {
         return {
           success: false,
-          // @ts-ignore
           error: `Not enough stock for ${productResponse.data.name}`,
         };
       }
     }
 
     const order = new Order({
-      userId,
       items: cart.items,
       totalAmount: cart.total,
       shippingAddress: shippingDetails,
@@ -81,36 +78,17 @@ export const createOrder = async (
         item.productId.toString(),
       );
       if (product.success && product.data) {
-        await ProductService.updateStock(
-          item.productId.toString(),
-          // @ts-ignore
-          product.data.stockQuantity - item.quantity,
-        );
+        if ('stockQuantity' in product.data) {
+          await ProductService.updateStock(
+            item.productId.toString(),
+            product.data.stockQuantity - item.quantity,
+          );
+        }
       }
     }
 
     await order.save();
-    await Cart.findByIdAndDelete(cartId);
-
-    return { success: true, data: order };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-};
-
-export const getOrderById = async (orderId: string): Promise<OrderResponse> => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
-      return { success: false, error: 'Invalid order ID' };
-    }
-
-    const order = await Order.findById(orderId).populate('items.productId');
-    if (!order) {
-      return { success: false, error: 'Order not found' };
-    }
+    await Cart.findOneAndDelete({ sessionId });
 
     return { success: true, data: order };
   } catch (error) {
