@@ -2,16 +2,6 @@ import { Response } from 'express';
 import * as CartService from '../services/cart.service';
 import { CartRequest } from '../models/cart.model';
 
-export interface CartCreateData {
-  sessionId: string;
-  userId?: string;
-  items?: Array<{
-    productId: string;
-    quantity: number;
-  }>;
-  total?: number;
-}
-
 export const createCart = async (
   req: CartRequest,
   res: Response,

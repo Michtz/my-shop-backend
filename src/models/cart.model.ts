@@ -1,6 +1,20 @@
 import { Document, Schema, model } from 'mongoose';
 import { Request } from 'express';
-import { randomUUID } from 'node:crypto';
+
+export interface CartResponse {
+  success: boolean;
+  data?: ICart | null;
+  error?: string;
+}
+export interface CartCreateData {
+  sessionId: string;
+  userId?: string | undefined;
+  items?: Array<{
+    productId: string;
+    quantity: number;
+  }>;
+  total?: number;
+}
 
 export interface ICartItem {
   productId: string;

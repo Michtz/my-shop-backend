@@ -1,22 +1,7 @@
-import { Cart } from '../models/cart.model';
+import { Cart, CartCreateData, CartResponse } from '../models/cart.model';
 import * as ProductService from './product.service';
 import { ICart } from '../models/cart.model';
 import mongoose from 'mongoose';
-
-export interface CartResponse {
-  success: boolean;
-  data?: ICart | null;
-  error?: string;
-}
-export interface CartCreateData {
-  sessionId: string;
-  userId?: string | undefined;
-  items?: Array<{
-    productId: string;
-    quantity: number;
-  }>;
-  total?: number;
-}
 
 export const createCart = async (
   data: CartCreateData,
