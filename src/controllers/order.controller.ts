@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import * as OrderService from '../services/order.service';
-import mongoose from 'mongoose';
 import { OrderRequest } from '../models/order.model';
 
 export const allOrders = async (

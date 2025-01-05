@@ -1,4 +1,3 @@
-// controllers/session.controller.ts
 import { Request, Response } from 'express';
 import * as SessionService from '../services/session.service';
 import { SessionRequest } from '../models/session.model';

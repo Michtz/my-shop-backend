@@ -1,6 +1,19 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Request } from 'express';
 
+export interface OrderResponse {
+  success: boolean;
+  data?: IOrder | IOrder[] | null;
+  error?: string;
+}
+
+export interface ShippingDetails {
+  street: string;
+  city: string;
+  zipCode: string;
+  country: string;
+}
+
 export interface IShippingAddress {
   street: string;
   city: string;

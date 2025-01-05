@@ -1,6 +1,12 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Request } from 'express';
 
+export interface SessionResponse {
+  success: boolean;
+  data?: any;
+  error?: string;
+}
+
 export interface ISession {
   sessionId: string;
   userId?: string;

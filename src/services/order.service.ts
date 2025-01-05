@@ -1,21 +1,7 @@
-import { Order, IOrder } from '../models/order.model';
+import { Order, OrderResponse, ShippingDetails } from '../models/order.model';
 import { Cart, ICart } from '../models/cart.model';
 import * as ProductService from './product.service';
 import mongoose from 'mongoose';
-import { Session } from '../models/session.model';
-
-export interface OrderResponse {
-  success: boolean;
-  data?: IOrder | IOrder[] | null;
-  error?: string;
-}
-
-interface ShippingDetails {
-  street: string;
-  city: string;
-  zipCode: string;
-  country: string;
-}
 
 export const allOrders = async () => {
   try {

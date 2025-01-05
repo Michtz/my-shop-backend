@@ -1,12 +1,5 @@
-// services/session.service.ts
-import { Session, ISession } from '../models/session.model';
+import { Session, ISession, SessionResponse } from '../models/session.model';
 import crypto from 'crypto';
-
-export interface SessionResponse {
-  success: boolean;
-  data?: any;
-  error?: string;
-}
 
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 Stunden
 
