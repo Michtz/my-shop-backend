@@ -41,31 +41,33 @@ export const createOrder = async (
     });
   }
 };
-/*
-export const getOrderById = async (
+
+export const getOrderDetails = async (
   req: OrderRequest,
   res: Response,
 ): Promise<void> => {
   try {
-    const { orderId } = req.params;
+    const orderId = req.params.orderId;
 
-    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!orderId) {
       res.status(400).json({
         success: false,
-        error: 'Invalid order ID',
+        error: 'Order ID is required',
       });
       return;
     }
 
-    const result = await OrderService.getOrderById(orderId);
-    res.status(result.success ? 200 : 404).json(result);
+    const result = await OrderService.getOrderDetails(orderId);
+    res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'Error fetching order',
+      error: 'Error fetching order details',
     });
   }
 };
+
+/*
 
 export const getUserOrders = async (
   req: OrderRequest,

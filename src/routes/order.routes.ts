@@ -1,5 +1,9 @@
 import { Router, Response } from 'express';
-import { allOrders, createOrder } from '../controllers/order.controller';
+import {
+  allOrders,
+  createOrder,
+  getOrderDetails,
+} from '../controllers/order.controller';
 import { OrderRequest } from '../models/order.model';
 
 const router = Router();
@@ -11,6 +15,11 @@ router
 router
   .route('/:sessionId')
   .post((req: OrderRequest, res: Response) => createOrder(req, res));
+
+router
+  .route('/details/:orderId')
+  .get((req: OrderRequest, res: Response) => getOrderDetails(req, res));
+
 /*
 
 router

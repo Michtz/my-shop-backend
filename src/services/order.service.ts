@@ -86,6 +86,23 @@ export const createOrder = async (
   }
 };
 
+export const getOrderDetails = async (
+  orderId: string,
+): Promise<OrderResponse> => {
+  try {
+    const order = await Order.findById(orderId).populate('items.productId');
+    if (!order) {
+      return { success: false, error: 'Order not found' };
+    }
+    return { success: true, data: order };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
 export const getUserOrders = async (userId: string): Promise<OrderResponse> => {
   try {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
