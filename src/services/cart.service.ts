@@ -1,7 +1,7 @@
 import { Cart, CartCreateData, CartResponse } from '../models/cart.model';
 import * as ProductService from './product.service';
-import { ICart } from '../models/cart.model';
 import mongoose from 'mongoose';
+import { ISession, Session, SessionResponse } from '../models/session.model';
 
 export const createCart = async (
   data: CartCreateData,
@@ -15,6 +15,7 @@ export const createCart = async (
       return {
         success: false,
         error: 'Cart already exists for this session/user',
+        data: existingCart,
       };
     }
 
@@ -40,19 +41,12 @@ export const createCart = async (
 export const getCart = async (
   sessionId: string,
   userId?: string,
-): Promise<CartResponse> => {
+): Promise<SessionResponse> => {
   try {
-    let cart: ICart | null | undefined = await Cart.findOne({
-      $or: [{ sessionId }],
-    }).populate('items.productId');
-    console.log('Cart Data:', JSON.stringify(cart, null, 2));
-    if (!cart) {
-      const newCartResponse = await createCart({ sessionId, userId });
-      if (!newCartResponse.success) {
-        throw new Error(newCartResponse.error);
-      }
-      cart = newCartResponse.data;
-    }
+    let cart: ISession | null | undefined = await Session.findOne({
+      sessionId,
+    });
+    console.log('Cart Data:', JSON.stringify(cart?.data.lastActivity, null, 2));
 
     return { success: true, data: cart };
   } catch (error) {
@@ -68,65 +62,66 @@ export const addToCart = async (
   userId: string | undefined,
   productId: string,
   quantity: number,
-): Promise<CartResponse> => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return { success: false, error: 'Invalid product ID' };
-    }
-
-    let cart = await Cart.findOne({ sessionId: sessionId });
-    const productResponse = await ProductService.getProductById(productId);
-
-    if (!productResponse.success) {
-      return { success: false, error: 'Product not found' };
-    }
-
-    const product = productResponse.data;
-
-    // @ts-ignore
-    if (product.stockQuantity < quantity) {
-      return { success: false, error: 'Not enough stock available' };
-    }
-
-    if (!cart) {
-      cart = new Cart({
-        userId,
-        items: [
-          {
-            productId,
-            quantity,
-            // @ts-ignore
-            price: product.price,
-          },
-        ],
-        // @ts-ignore
-        total: product.price * quantity,
-      });
-    } else {
-      const existingItem = cart.items.find(
-        (item) => item.productId.toString() === productId,
-      );
-
-      if (existingItem) {
-        existingItem.quantity += quantity;
-      } else {
-        cart.items.push({
-          productId,
-          quantity,
-          // @ts-ignore
-          price: product.price,
-        });
-      }
-    }
-
-    await cart.save();
-    return { success: true, data: cart };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+) => {
+  // try {
+  //   if (!mongoose.Types.ObjectId.isValid(productId)) {
+  //     return { success: false, error: 'Invalid product ID' };
+  //   }
+  //
+  //   let cart = await Session.findOne({ sessionId: sessionId });
+  //   console.log(cart);
+  //   const productResponse = await ProductService.getProductById(productId);
+  //
+  //   if (!productResponse.success) {
+  //     return { success: false, error: 'Product not found' };
+  //   }
+  //
+  //   const product = productResponse.data;
+  //
+  //   // @ts-ignore
+  //   if (product.stockQuantity < quantity) {
+  //     return { success: false, error: 'Not enough stock available' };
+  //   }
+  //
+  //   if (!cart) {
+  //     cart = new Cart({
+  //       userId,
+  //       items: [
+  //         {
+  //           productId,
+  //           quantity,
+  //           // @ts-ignore
+  //           price: product.price,
+  //         },
+  //       ],
+  //       // @ts-ignore
+  //       total: product.price * quantity,
+  //     });
+  //   } else {
+  //     const existingItem = cart.items.find(
+  //       (item) => item.productId.toString() === productId,
+  //     );
+  //
+  //     if (existingItem) {
+  //       existingItem.quantity += quantity;
+  //     } else {
+  //       cart.items.push({
+  //         productId,
+  //         quantity,
+  //         // @ts-ignore
+  //         price: product.price,
+  //       });
+  //     }
+  //   }
+  //
+  //   await cart.save();
+  //   return { success: true, data: cart };
+  // } catch (error) {
+  //   return {
+  //     success: false,
+  //     error: error instanceof Error ? error.message : 'Unknown error',
+  //   };
+  // }
 };
 
 export const removeFromCart = async (

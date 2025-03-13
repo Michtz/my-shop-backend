@@ -10,9 +10,9 @@ import {
 
 const router = Router();
 
-router
-  .route('/:sessionId')
-  .post((req: CartRequest, res: Response) => createCart(req, res));
+// router
+//   .route('/:sessionId')
+//   .post((req: CartRequest, res: Response) => createCart(req, res));
 
 router
   .route('/:sessionId')

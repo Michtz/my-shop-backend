@@ -1,14 +1,23 @@
-import express, { Request, Response } from 'express';
+import express, { Express, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import http from 'http';
+import { initializeSocketIO } from './services/socket.service';
 
+import sessionRoutes from './routes/session.routes';
+import orderRoutes from './routes/order.routes';
+import cartRoutes from './routes/cart.routes';
+import productRoutes from './routes/product.routes';
+
+/* ToDo: add joi as validation "maybe": https://joi.dev/ */
 dotenv.config();
 
-const app = express();
+const app: Express = express();
 
 app.use(cors());
 app.use(express.json());
+const server = http.createServer(app);
 
 app.get('/test', (req: Request, res: Response) => {
   res.json({ message: 'backend is working' });
@@ -24,17 +33,12 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
-import productRoutes from './routes/product.routes';
 app.use('/api/products', productRoutes);
-
-import cartRoutes from './routes/cart.routes';
 app.use('/api/cart', cartRoutes);
-
-import orderRoutes from './routes/order.routes';
 app.use('/api/order', orderRoutes);
-
-import sessionRoutes from './routes/session.routes';
 app.use('/api/sessions', sessionRoutes);
+
+initializeSocketIO(server);
 
 const PORT = process.env.PORT || 4200;
 
