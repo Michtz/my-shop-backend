@@ -62,7 +62,7 @@ const sessionSchema = new Schema<ISessionDocument>(
       type: Date,
       required: true,
       index: true,
-      expires: 0, // Dies ersetzt den separaten Index
+      expires: 0,
     },
   },
   {

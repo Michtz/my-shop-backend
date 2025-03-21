@@ -1,7 +1,6 @@
 import { Cart, CartCreateData, CartResponse } from '../models/cart.model';
-import * as ProductService from './product.service';
 import mongoose from 'mongoose';
-import { ISession, Session, SessionResponse } from '../models/session.model';
+import { Product } from '../models/product.model';
 
 export const createCart = async (
   data: CartCreateData,
@@ -12,10 +11,12 @@ export const createCart = async (
     });
 
     if (existingCart) {
+      const populatedCart = await existingCart.populate('items.productId');
+
       return {
         success: false,
         error: 'Cart already exists for this session/user',
-        data: existingCart,
+        data: populatedCart,
       };
     }
 
@@ -25,7 +26,6 @@ export const createCart = async (
       items: data.items || [],
       total: data.total || 0,
     });
-
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
 
@@ -41,13 +41,21 @@ export const createCart = async (
 export const getCart = async (
   sessionId: string,
   userId?: string,
-): Promise<SessionResponse> => {
+): Promise<CartResponse> => {
   try {
-    let cart: ISession | null | undefined = await Session.findOne({
+    let cart = await Cart.findOne({
       sessionId,
-    });
-    console.log('Cart Data:', JSON.stringify(cart?.data.lastActivity, null, 2));
+    }).populate('items.productId');
 
+    if (!cart) {
+      return {
+        success: false,
+        error: 'Cart not found',
+        data: null,
+      };
+    }
+
+    console.log('Cart Data:', JSON.stringify(cart, null, 2));
     return { success: true, data: cart };
   } catch (error) {
     return {
@@ -62,66 +70,62 @@ export const addToCart = async (
   userId: string | undefined,
   productId: string,
   quantity: number,
-) => {
-  // try {
-  //   if (!mongoose.Types.ObjectId.isValid(productId)) {
-  //     return { success: false, error: 'Invalid product ID' };
-  //   }
-  //
-  //   let cart = await Session.findOne({ sessionId: sessionId });
-  //   console.log(cart);
-  //   const productResponse = await ProductService.getProductById(productId);
-  //
-  //   if (!productResponse.success) {
-  //     return { success: false, error: 'Product not found' };
-  //   }
-  //
-  //   const product = productResponse.data;
-  //
-  //   // @ts-ignore
-  //   if (product.stockQuantity < quantity) {
-  //     return { success: false, error: 'Not enough stock available' };
-  //   }
-  //
-  //   if (!cart) {
-  //     cart = new Cart({
-  //       userId,
-  //       items: [
-  //         {
-  //           productId,
-  //           quantity,
-  //           // @ts-ignore
-  //           price: product.price,
-  //         },
-  //       ],
-  //       // @ts-ignore
-  //       total: product.price * quantity,
-  //     });
-  //   } else {
-  //     const existingItem = cart.items.find(
-  //       (item) => item.productId.toString() === productId,
-  //     );
-  //
-  //     if (existingItem) {
-  //       existingItem.quantity += quantity;
-  //     } else {
-  //       cart.items.push({
-  //         productId,
-  //         quantity,
-  //         // @ts-ignore
-  //         price: product.price,
-  //       });
-  //     }
-  //   }
-  //
-  //   await cart.save();
-  //   return { success: true, data: cart };
-  // } catch (error) {
-  //   return {
-  //     success: false,
-  //     error: error instanceof Error ? error.message : 'Unknown error',
-  //   };
-  // }
+): Promise<CartResponse> => {
+  try {
+    let cart = await Cart.findOne({ sessionId });
+    const product = await Product.findById(productId);
+    if (!product) {
+      return {
+        success: false,
+        error: 'Product not found',
+      };
+    }
+
+    if (cart) {
+      const existingItemIndex = cart.items.findIndex(
+        (item) => item.productId.toString() === productId,
+      );
+
+      if (existingItemIndex > -1) {
+        cart.items[existingItemIndex].quantity += quantity;
+      } else {
+        cart.items.push({
+          productId,
+          quantity,
+          price: product.price,
+        });
+      }
+
+      cart.calculateTotal();
+      await cart.save();
+    } else {
+      cart = new Cart({
+        sessionId,
+        userId,
+        items: [
+          {
+            productId,
+            quantity,
+            price: product.price,
+          },
+        ],
+      });
+
+      await cart.save();
+    }
+
+    const populatedCart = await cart.populate('items.productId');
+    return {
+      success: true,
+      data: populatedCart,
+    };
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 };
 
 export const removeFromCart = async (
@@ -141,9 +145,11 @@ export const removeFromCart = async (
     cart.items = cart.items.filter(
       (item) => item.productId.toString() !== productId,
     );
-    await cart.save();
 
-    return { success: true, data: cart };
+    await cart.save();
+    const populatedCart = await cart.populate('items.productId');
+
+    return { success: true, data: populatedCart };
   } catch (error) {
     return {
       success: false,
@@ -151,7 +157,6 @@ export const removeFromCart = async (
     };
   }
 };
-
 export const updateCartItem = async (
   sessionId: string,
   productId: string,
@@ -174,19 +179,21 @@ export const updateCartItem = async (
       return { success: false, error: 'Item not found in cart' };
     }
 
-    const productResponse = await ProductService.getProductById(productId);
-    if (!productResponse.success) {
+    const product = await Product.findById(productId);
+    if (!product) {
       return { success: false, error: 'Product not found' };
     }
-    // @ts-ignore
-    if (productResponse.data.stockQuantity < quantity) {
+
+    if (product.stockQuantity < quantity) {
       return { success: false, error: 'Not enough stock available' };
     }
 
     item.quantity = quantity;
+    item.price = product.price;
     await cart.save();
+    const populatedCart = await cart.populate('items.productId');
 
-    return { success: true, data: cart };
+    return { success: true, data: populatedCart };
   } catch (error) {
     return {
       success: false,

@@ -1,11 +1,13 @@
 import { Document, Schema, model } from 'mongoose';
 import { Request } from 'express';
+import { IProductDocument } from './product.model'; // Stellen Sie sicher, dass der Import korrekt ist
 
 export interface CartResponse {
   success: boolean;
   data?: ICart | null;
   error?: string;
 }
+
 export interface CartCreateData {
   sessionId: string;
   userId?: string | undefined;
@@ -17,10 +19,12 @@ export interface CartCreateData {
 }
 
 export interface ICartItem {
-  productId: string;
+  productId: string | Schema.Types.ObjectId;
   quantity: number;
   price: number;
+  product?: IProductDocument; // Neues Feld für das komplette Produkt
 }
+
 export interface ICart extends Document {
   sessionId: string;
   userId?: string | undefined;
@@ -44,7 +48,6 @@ export interface CartRequest extends Request {
 }
 
 const cartItemSchema = new Schema<ICartItem>({
-  // @ts-ignore
   productId: {
     type: Schema.Types.ObjectId,
     ref: 'Product',
@@ -80,7 +83,7 @@ const cartSchema = new Schema<ICart>({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 7 * 24 * 60 * 60,
+    expires: 7 * 24 * 60 * 60, // 7 Tage TTL
   },
 });
 
@@ -94,6 +97,26 @@ cartSchema.methods.calculateTotal = function (this: ICart): number {
 cartSchema.pre('save', function (next) {
   this.calculateTotal();
   next();
+});
+
+// Diese Methode wird automatisch aufgerufen, wenn das Dokument zu JSON konvertiert wird
+cartSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    // Wenn items.productId bereits populated ist, kopieren wir es ins product-Feld
+    if (ret.items) {
+      ret.items = ret.items.map((item: { productId: { _id: any } }) => {
+        if (item.productId && typeof item.productId !== 'string') {
+          return {
+            ...item,
+            product: item.productId, // Das vollständige Produkt
+            productId: item.productId._id, // Nur die ID
+          };
+        }
+        return item;
+      });
+    }
+    return ret;
+  },
 });
 
 export const Cart = model<ICart>('Cart', cartSchema);
