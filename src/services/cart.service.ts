@@ -1,18 +1,26 @@
-import { Cart, CartCreateData, CartResponse } from '../models/cart.model';
+import {
+  Cart,
+  CartCreateData,
+  CartResponse,
+  IUserCartInfo,
+} from '../models/cart.model';
 import mongoose from 'mongoose';
 import { Product } from '../models/product.model';
+import { IUser, User } from '../models/user.model';
 
+// works as intended
 export const createCart = async (
   data: CartCreateData,
 ): Promise<CartResponse> => {
   try {
+    const { sessionId, userId, items = [], total = 0 } = data;
+
     const existingCart = await Cart.findOne({
-      $or: [{ sessionId: data.sessionId }, { userId: data.userId }],
+      $or: [{ sessionId }, ...(userId ? [{ userId }] : [])],
     });
 
     if (existingCart) {
       const populatedCart = await existingCart.populate('items.productId');
-
       return {
         success: false,
         error: 'Cart already exists for this session/user',
@@ -21,11 +29,12 @@ export const createCart = async (
     }
 
     const cart = new Cart({
-      sessionId: data.sessionId,
-      userId: data.userId,
-      items: data.items || [],
-      total: data.total || 0,
+      sessionId,
+      userId,
+      items,
+      total,
     });
+
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
 
@@ -38,6 +47,8 @@ export const createCart = async (
   }
 };
 
+// works as intended
+//Todo: add user id validation
 export const getCart = async (
   sessionId: string,
   userId?: string,
@@ -65,6 +76,7 @@ export const getCart = async (
   }
 };
 
+// works as intended
 export const addToCart = async (
   sessionId: string,
   userId: string | undefined,
@@ -128,6 +140,7 @@ export const addToCart = async (
   }
 };
 
+// works as intended
 export const removeFromCart = async (
   sessionId: string,
   productId: string,
@@ -157,6 +170,8 @@ export const removeFromCart = async (
     };
   }
 };
+
+// works as intended
 export const updateCartItem = async (
   sessionId: string,
   productId: string,
@@ -167,7 +182,7 @@ export const updateCartItem = async (
       return { success: false, error: 'Invalid product ID' };
     }
 
-    const cart = await Cart.findOne({ sessionId: sessionId });
+    const cart = await Cart.findOne({ sessionId });
     if (!cart) {
       return { success: false, error: 'Cart not found' };
     }
@@ -190,6 +205,165 @@ export const updateCartItem = async (
 
     item.quantity = quantity;
     item.price = product.price;
+    cart.calculateTotal?.();
+
+    await cart.save();
+    const populatedCart = await cart.populate('items.productId');
+
+    return { success: true, data: populatedCart };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
+// Todo: control after fix of user service
+export const updateCartUserInfo = async (
+  sessionId: string,
+  userInfo: IUserCartInfo,
+): Promise<CartResponse> => {
+  try {
+    const cart = await Cart.findOne({ sessionId });
+    if (!cart) {
+      return { success: false, error: 'Cart not found' };
+    }
+    cart.userInfo = userInfo;
+    await cart.save();
+    const populatedCart = await cart.populate('userInfo');
+    return { success: true, data: populatedCart };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
+// Todo: control after fix of user service
+export const updateCartAddress = async (
+  sessionId: string,
+  addressId: string,
+): Promise<CartResponse> => {
+  try {
+    const cart = await Cart.findOne({ sessionId });
+    if (!cart) {
+      return { success: false, error: 'Cart not found' };
+    }
+
+    if (!cart.userId) {
+      return { success: false, error: 'Cart has no associated user' };
+    }
+
+    const user = await User.findById(cart.userId);
+    if (!user) {
+      return { success: false, error: 'User not found' };
+    }
+    console.log('Cart Data:', JSON.stringify(user, null, 2));
+
+    const selectedAddress = user.addresses.find(
+      (address) => address.street.toString() === addressId,
+    );
+
+    if (!selectedAddress) {
+      return { success: false, error: 'Address not found' };
+    }
+
+    if (!cart.userInfo) {
+      cart.userInfo = { userId: cart.userId };
+    }
+
+    cart.userInfo.selectedAddress = selectedAddress;
+    await cart.save();
+
+    const populatedCart = await cart.populate('items.productId');
+    return { success: true, data: populatedCart };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
+// Todo: control after fix of user service
+export const updateCartPayment = async (
+  sessionId: string,
+  paymentId: string,
+): Promise<CartResponse> => {
+  try {
+    const cart = await Cart.findOne({ sessionId });
+    if (!cart) {
+      return { success: false, error: 'Cart not found' };
+    }
+
+    if (!cart.userId) {
+      return { success: false, error: 'Cart has no associated user' };
+    }
+
+    const user: IUser | null = await User.findById(cart.userId);
+    if (!user) {
+      return { success: false, error: 'User not found' };
+    }
+
+    const selectedPayment = user.paymentInfo.find(
+      (payment) => payment._id.toString() === paymentId,
+    );
+
+    if (!selectedPayment) {
+      return { success: false, error: 'Payment method not found' };
+    }
+
+    if (!cart.userInfo) {
+      cart.userInfo = { userId: cart.userId };
+    }
+
+    cart.userInfo.selectedPayment = selectedPayment;
+    await cart.save();
+
+    const populatedCart = await cart.populate('items.productId');
+    return { success: true, data: populatedCart };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
+// works as intended
+export const updateCartGuestInfo = async (
+  sessionId: string,
+  guestInfo: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string;
+    address?: any;
+  },
+): Promise<CartResponse> => {
+  try {
+    const cart = await Cart.findOne({ sessionId });
+    if (!cart) {
+      return { success: false, error: 'Cart not found' };
+    }
+
+    if (!cart.userInfo) {
+      cart.userInfo = {};
+    }
+
+    cart.userInfo.guestInfo = {
+      email: guestInfo.email,
+      firstName: guestInfo.firstName,
+      lastName: guestInfo.lastName,
+      phoneNumber: guestInfo.phoneNumber,
+    };
+
+    if (guestInfo.address) {
+      cart.userInfo.selectedAddress = guestInfo.address;
+    }
+
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
 

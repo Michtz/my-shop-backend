@@ -9,7 +9,9 @@ import sessionRoutes from './routes/session.routes';
 import orderRoutes from './routes/order.routes';
 import cartRoutes from './routes/cart.routes';
 import productRoutes from './routes/product.routes';
+import connectDB from './config/db';
 
+connectDB();
 /* ToDo: add joi as validation "maybe": https://joi.dev/ */
 dotenv.config();
 

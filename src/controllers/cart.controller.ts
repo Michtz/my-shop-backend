@@ -1,23 +1,35 @@
 import { Response } from 'express';
 import * as CartService from '../services/cart.service';
-import { CartRequest } from '../models/cart.model';
+import { CartCreateData, CartRequest } from '../models/cart.model';
 
+// works as intended
 export const createCart = async (
   req: CartRequest,
   res: Response,
 ): Promise<void> => {
   try {
-    const data = { sessionId: req.params.sessionId };
+    const { sessionId, userId } = req.params;
+
+    const data: CartCreateData = {
+      sessionId,
+      userId,
+      items: req.body.items?.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity || 1,
+      })),
+    };
+
     const cart = await CartService.createCart(data);
     res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'Error fetching cart',
+      error: 'Error creating cart',
     });
   }
 };
 
+// works as intended
 export const getCart = async (
   req: CartRequest,
   res: Response,
@@ -35,6 +47,7 @@ export const getCart = async (
   }
 };
 
+// works as intended
 export const addToCart = async (
   req: CartRequest,
   res: Response,
@@ -42,49 +55,82 @@ export const addToCart = async (
   try {
     const userId = req.params.userId;
     const sessionId = req.params.sessionId;
-    const { productId, quantity } = req.body;
 
-    if (!productId || !quantity) {
+    if (!req.body.items || req.body.items.length === 0) {
       res.status(400).json({
         success: false,
-        error: 'ProductId and quantity are required',
+        error: 'Items array is required and must not be empty',
       });
       return;
     }
 
-    const result = await CartService.addToCart(
-      sessionId,
-      userId,
-      productId,
-      quantity,
-    );
-    res.status(200).json(result);
+    const results = [];
+    for (const item of req.body.items) {
+      const { productId, quantity } = item;
+
+      if (!productId || !quantity) {
+        res.status(400).json({
+          success: false,
+          error: 'ProductId and quantity are required for all items',
+        });
+        return;
+      }
+
+      const result = await CartService.addToCart(
+        sessionId,
+        userId,
+        productId,
+        quantity,
+      );
+
+      results.push(result);
+    }
+
+    res.status(200).json({
+      success: true,
+      results,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'Error adding item to cart',
+      error: 'Error adding items to cart',
     });
   }
 };
 
+// works as intended
 export const removeFromCart = async (
   req: CartRequest,
   res: Response,
 ): Promise<void> => {
   try {
     const sessionId = req.params.sessionId;
-    const productId = req.params.productId;
 
-    if (!productId) {
+    if (!req.body.items || req.body.items.length === 0) {
       res.status(400).json({
         success: false,
-        error: 'ProductId is required',
+        error: 'Items array is required and must not be empty',
       });
       return;
     }
 
-    const result = await CartService.removeFromCart(sessionId, productId);
-    res.status(200).json(result);
+    const results = [];
+    for (const item of req.body.items) {
+      const { productId } = item;
+
+      if (!productId) {
+        res.status(400).json({
+          success: false,
+          error: 'ProductId are required for all items to delete them',
+        });
+        return;
+      }
+
+      const result = await CartService.removeFromCart(sessionId, productId);
+
+      results.push(result);
+    }
+    res.status(200).json(results);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -93,14 +139,14 @@ export const removeFromCart = async (
   }
 };
 
+// works as intended
 export const updateCartItem = async (
   req: CartRequest,
   res: Response,
 ): Promise<void> => {
   try {
-    const sessionId = req.params.sessionId;
-    const productId = req.params.productId;
-    const { quantity } = req.body;
+    const { sessionId, productId } = req.params;
+    const quantity = req.body.items?.[0]?.quantity;
 
     if (!productId || !quantity) {
       res.status(400).json({
@@ -120,6 +166,117 @@ export const updateCartItem = async (
     res.status(500).json({
       success: false,
       error: 'Error updating cart item',
+    });
+  }
+};
+
+// Todo: control after fix of user service
+export const updateCartUserInfo = async (
+  req: CartRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sessionId = req.params.sessionId;
+    const { userInfo } = req.body;
+
+    if (!userInfo) {
+      res.status(400).json({
+        success: false,
+        error: 'User information is required',
+      });
+      return;
+    }
+
+    const result = await CartService.updateCartUserInfo(sessionId, userInfo);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error updating user information',
+    });
+  }
+};
+
+// Todo: control after fix of user service
+export const updateCartAddress = async (
+  req: CartRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sessionId = req.params.sessionId;
+    const addressId = req.body.userInfo?.selectedAddressId;
+
+    if (!addressId) {
+      res.status(400).json({
+        success: false,
+        error: 'AddressId is required',
+      });
+      return;
+    }
+
+    const result = await CartService.updateCartAddress(sessionId, addressId);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error updating cart address',
+    });
+  }
+};
+
+// Todo: control after fix of user service
+export const updateCartPayment = async (
+  req: CartRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sessionId = req.params.sessionId;
+    const paymentId = req.params.paymentId;
+
+    if (!paymentId) {
+      res.status(400).json({
+        success: false,
+        error: 'PaymentId is required',
+      });
+      return;
+    }
+
+    const result = await CartService.updateCartPayment(sessionId, paymentId);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error updating payment method',
+    });
+  }
+};
+
+// works as intended
+export const updateCartGuestInfo = async (
+  req: CartRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sessionId = req.params.sessionId;
+    const { userInfo } = req.body;
+    console.log(req.body.userInfo);
+    if (!userInfo || !userInfo.guestInfo) {
+      res.status(400).json({
+        success: false,
+        error: 'Guest information is required',
+      });
+      return;
+    }
+
+    const result = await CartService.updateCartGuestInfo(
+      sessionId,
+      userInfo.guestInfo,
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error updating guest information',
     });
   }
 };

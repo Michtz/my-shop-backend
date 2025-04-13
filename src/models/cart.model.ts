@@ -1,6 +1,12 @@
 import { Document, Schema, model } from 'mongoose';
 import { Request } from 'express';
-import { IProductDocument } from './product.model'; // Stellen Sie sicher, dass der Import korrekt ist
+import { IProductDocument } from './product.model';
+import {
+  addressSchema,
+  paymentInfoSchema,
+  IAddress,
+  IPaymentInfo,
+} from './user.model';
 
 export interface CartResponse {
   success: boolean;
@@ -22,12 +28,27 @@ export interface ICartItem {
   productId: string | Schema.Types.ObjectId;
   quantity: number;
   price: number;
-  product?: IProductDocument; // Neues Feld für das komplette Produkt
+  product?: IProductDocument;
+}
+
+export interface IUserCartInfo {
+  userId?: string;
+  selectedAddress?: IAddress;
+  selectedPayment?: IPaymentInfo;
+  guestInfo?: IGuestInfo;
+}
+
+export interface IGuestInfo {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
 }
 
 export interface ICart extends Document {
   sessionId: string;
-  userId?: string | undefined;
+  userId?: string;
+  userInfo?: IUserCartInfo;
   items: ICartItem[];
   total: number;
   createdAt: Date;
@@ -37,13 +58,28 @@ export interface ICart extends Document {
 export interface CartRequest extends Request {
   params: {
     sessionId: string;
-    userId?: string | undefined;
+    userId?: string;
     productId: string;
     quantity?: string;
+    adresseId?: string;
+    paymentId?: string;
   };
   body: {
-    productId: string;
-    quantity?: number;
+    items: {
+      productId: string;
+      quantity?: number;
+    }[];
+    userInfo?: {
+      selectedAddressId?: string;
+      selectedPaymentId?: string;
+      guestInfo?: {
+        email: string;
+        firstName: string;
+        lastName: string;
+        phoneNumber?: string;
+        address: IAddress;
+      };
+    };
   };
 }
 
@@ -65,15 +101,58 @@ const cartItemSchema = new Schema<ICartItem>({
   },
 });
 
+const guestInfoSchema = new Schema<IGuestInfo>({
+  email: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true,
+    validate: {
+      validator: function (v: string) {
+        return /^\S+@\S+\.\S+$/.test(v);
+      },
+      message: 'Please enter a valid email address',
+    },
+  },
+  firstName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  lastName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  phoneNumber: {
+    type: String,
+    trim: true,
+  },
+});
+
+const userCartInfoSchema = new Schema<IUserCartInfo>({
+  userId: {
+    ref: 'User',
+    type: String,
+    required: false,
+  },
+  selectedAddress: addressSchema,
+  selectedPayment: paymentInfoSchema,
+  guestInfo: guestInfoSchema,
+});
+
 const cartSchema = new Schema<ICart>({
   sessionId: {
     type: String,
     required: true,
+    index: true,
   },
   userId: {
     type: String,
     required: false,
+    index: true,
   },
+  userInfo: userCartInfoSchema,
   items: [cartItemSchema],
   total: {
     type: Number,
@@ -83,7 +162,7 @@ const cartSchema = new Schema<ICart>({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 7 * 24 * 60 * 60, // 7 Tage TTL
+    expires: 7 * 24 * 60 * 60, // 7 days
   },
 });
 
@@ -99,17 +178,15 @@ cartSchema.pre('save', function (next) {
   next();
 });
 
-// Diese Methode wird automatisch aufgerufen, wenn das Dokument zu JSON konvertiert wird
 cartSchema.set('toJSON', {
   transform: function (doc, ret) {
-    // Wenn items.productId bereits populated ist, kopieren wir es ins product-Feld
     if (ret.items) {
       ret.items = ret.items.map((item: { productId: { _id: any } }) => {
         if (item.productId && typeof item.productId !== 'string') {
           return {
             ...item,
-            product: item.productId, // Das vollständige Produkt
-            productId: item.productId._id, // Nur die ID
+            product: item.productId, // Complete product
+            productId: item.productId._id, // Only ID
           };
         }
         return item;
@@ -118,5 +195,8 @@ cartSchema.set('toJSON', {
     return ret;
   },
 });
+
+// Compound index for faster lookups
+cartSchema.index({ sessionId: 1, userId: 1 });
 
 export const Cart = model<ICart>('Cart', cartSchema);
