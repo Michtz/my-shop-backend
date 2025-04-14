@@ -66,7 +66,6 @@ export const getCart = async (
       };
     }
 
-    console.log('Cart Data:', JSON.stringify(cart, null, 2));
     return { success: true, data: cart };
   } catch (error) {
     return {

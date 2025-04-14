@@ -20,6 +20,11 @@ export const createCart = async (
     };
 
     const cart = await CartService.createCart(data);
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
+
     res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({
@@ -38,6 +43,10 @@ export const getCart = async (
     const userId = req.params?.userId;
     const sessionId = req.params.sessionId;
     const cart = await CartService.getCart(sessionId, userId);
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
     res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({
@@ -76,14 +85,18 @@ export const addToCart = async (
         return;
       }
 
-      const result = await CartService.addToCart(
+      const cart = await CartService.addToCart(
         sessionId,
         userId,
         productId,
         quantity,
       );
 
-      results.push(result);
+      if (!cart.success) {
+        res.status(400).json(cart);
+        return;
+      }
+      results.push(cart);
     }
 
     res.status(200).json({
@@ -126,9 +139,12 @@ export const removeFromCart = async (
         return;
       }
 
-      const result = await CartService.removeFromCart(sessionId, productId);
-
-      results.push(result);
+      const cart = await CartService.removeFromCart(sessionId, productId);
+      if (!cart.success) {
+        res.status(400).json(cart);
+        return;
+      }
+      results.push(cart);
     }
     res.status(200).json(results);
   } catch (error) {
@@ -156,12 +172,18 @@ export const updateCartItem = async (
       return;
     }
 
-    const result = await CartService.updateCartItem(
+    const cart = await CartService.updateCartItem(
       sessionId,
       productId,
       quantity,
     );
-    res.status(200).json(result);
+
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
+
+    res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -187,8 +209,13 @@ export const updateCartUserInfo = async (
       return;
     }
 
-    const result = await CartService.updateCartUserInfo(sessionId, userInfo);
-    res.status(200).json(result);
+    const cart = await CartService.updateCartUserInfo(sessionId, userInfo);
+
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
+    res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -214,8 +241,12 @@ export const updateCartAddress = async (
       return;
     }
 
-    const result = await CartService.updateCartAddress(sessionId, addressId);
-    res.status(200).json(result);
+    const cart = await CartService.updateCartAddress(sessionId, addressId);
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
+    res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -241,8 +272,12 @@ export const updateCartPayment = async (
       return;
     }
 
-    const result = await CartService.updateCartPayment(sessionId, paymentId);
-    res.status(200).json(result);
+    const cart = await CartService.updateCartPayment(sessionId, paymentId);
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
+    res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -268,11 +303,15 @@ export const updateCartGuestInfo = async (
       return;
     }
 
-    const result = await CartService.updateCartGuestInfo(
+    const cart = await CartService.updateCartGuestInfo(
       sessionId,
       userInfo.guestInfo,
     );
-    res.status(200).json(result);
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
+    res.status(200).json(cart);
   } catch (error) {
     res.status(500).json({
       success: false,
