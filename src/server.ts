@@ -10,6 +10,7 @@ import orderRoutes from './routes/order.routes';
 import cartRoutes from './routes/cart.routes';
 import productRoutes from './routes/product.routes';
 import connectDB from './config/db';
+import authRoutes from './routes/auth.routes';
 
 connectDB();
 /* ToDo: add joi as validation "maybe": https://joi.dev/ */
@@ -35,6 +36,7 @@ app.get('/', (req: Request, res: Response) => {
   });
 });
 
+app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/order', orderRoutes);
