@@ -259,7 +259,7 @@ export const updateCartGuestInfo = async (
   try {
     const sessionId = req.params.sessionId;
     const { userInfo } = req.body;
-    console.log(req.body.userInfo);
+
     if (!userInfo || !userInfo.guestInfo) {
       res.status(400).json({
         success: false,

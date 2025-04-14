@@ -59,13 +59,13 @@ export interface CartRequest extends Request {
   params: {
     sessionId: string;
     userId?: string;
-    productId: string;
+    productId?: string;
     quantity?: string;
     adresseId?: string;
     paymentId?: string;
   };
   body: {
-    items: {
+    items?: {
       productId: string;
       quantity?: number;
     }[];
@@ -96,7 +96,7 @@ const cartItemSchema = new Schema<ICartItem>({
   },
   price: {
     type: Number,
-    required: true,
+    required: false,
     min: [0, 'Price cannot be negative'],
   },
 });
