@@ -1,4 +1,4 @@
-import { Order, OrderResponse, ShippingDetails } from '../models/order.model';
+import { IShippingAddress, Order, OrderResponse } from '../models/order.model';
 import { Cart, ICart } from '../models/cart.model';
 import * as ProductService from './product.service';
 import mongoose from 'mongoose';
@@ -20,16 +20,21 @@ export const allOrders = async () => {
   }
 };
 
+// Todo: control
 export const createOrder = async (
   sessionId: string,
-  shippingDetails: ShippingDetails,
+  shippingDetails: IShippingAddress,
 ): Promise<OrderResponse> => {
   try {
     const cart: ICart | null = await Cart.findOne({ sessionId });
-    console.log('Cart Data:', JSON.stringify(cart, null, 2));
 
     if (!cart) {
       return { success: false, error: 'Cart not found' };
+    }
+
+    const adresse = cart.userInfo?.selectedAddress;
+    if (!adresse) {
+      return { success: false, error: 'Adresse is required' };
     }
 
     for (const item of cart.items) {
@@ -48,7 +53,7 @@ export const createOrder = async (
       ) {
         return {
           success: false,
-          error: `Not enough stock for ${productResponse.data.name}`,
+          error: `Not enough stock for ${productResponse.data.name} only ${productResponse.data.stockQuantity}`,
         };
       }
     }

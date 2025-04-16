@@ -1,5 +1,5 @@
 import { AuthResponse } from '../models/auth.model';
-import { IUser, User } from '../models/user.model';
+import { User } from '../models/user.model';
 import {
   generateToken,
   generateRefreshToken,
@@ -13,7 +13,6 @@ import {
 import * as SessionService from './session.service';
 import bcrypt from 'bcrypt';
 
-// Konstante für bcrypt Salting-Runden für Konsistenz
 const SALT_ROUNDS = 10;
 
 export const register = async (
@@ -32,7 +31,6 @@ export const register = async (
       };
     }
 
-    // Verwende direkt bcrypt.hash mit SALT_ROUNDS statt separatem genSalt
     const hashedPassword = await bcrypt.hash(String(password), SALT_ROUNDS);
 
     const user = new User({
@@ -41,7 +39,7 @@ export const register = async (
       firstName,
       lastName,
       role: 'customer',
-      tokenVersion: 0, // Explizit setzen
+      tokenVersion: 0,
     });
 
     await user.save();
@@ -106,7 +104,6 @@ export const login = async (
       };
     }
 
-    // Stelle sicher, dass beide Werte als Strings behandelt werden
     const plainPassword = String(password);
     const storedHash = String(user.password);
 
@@ -319,7 +316,6 @@ export const changePassword = async (
       };
     }
 
-    // Stelle sicher, dass beide Werte als Strings behandelt werden
     const plainPassword = String(currentPassword);
     const storedHash = String(user.password);
 
@@ -331,7 +327,6 @@ export const changePassword = async (
       };
     }
 
-    // Verwende direkt bcrypt.hash mit SALT_ROUNDS statt separatem genSalt
     user.password = await bcrypt.hash(String(newPassword), SALT_ROUNDS);
 
     user.tokenVersion = (user.tokenVersion || 0) + 1;
