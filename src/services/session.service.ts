@@ -1,13 +1,13 @@
 import { Session, ISession, SessionResponse } from '../models/session.model';
-import crypto from 'crypto';
+import { generateSessionId } from '../utils/jwt.utils';
 
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 Stunden
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24h
 
 export const createSession = async (
   data: Partial<ISession> = {},
 ): Promise<SessionResponse> => {
   try {
-    const sessionId = crypto.randomBytes(32).toString('hex');
+    const sessionId = generateSessionId();
     const session = await Session.create({
       sessionId,
       data: {
@@ -30,10 +30,12 @@ export const getSession = async (
   sessionId: string,
 ): Promise<SessionResponse> => {
   try {
-    const session = await Session.findOne({ sessionId });
-    if (!session) {
-      return { success: false, error: 'Session not found' };
-    }
+    let query = Session.findOne({ sessionId });
+
+    const session = await query.exec();
+
+    if (!session) return { success: false, error: 'Session not found' };
+
     return { success: true, data: session };
   } catch (error) {
     return {
@@ -47,7 +49,10 @@ export const getAllSessions = async (
   filter: any = {},
 ): Promise<SessionResponse> => {
   try {
-    const sessions = await Session.find(filter);
+    let query = Session.find(filter);
+
+    const sessions = await query.exec();
+
     return { success: true, data: sessions };
   } catch (error) {
     return {
@@ -56,6 +61,7 @@ export const getAllSessions = async (
     };
   }
 };
+
 export const updateSession = async (
   sessionId: string,
   updateData: Partial<ISession>,
@@ -78,12 +84,15 @@ export const updateSession = async (
     if (updateData.userId) {
       updateObject.userId = updateData.userId;
     }
+    if (updateData.cartId) {
+      updateObject.cartId = updateData.cartId;
+    }
 
     const session = await Session.findOneAndUpdate(
       { sessionId },
       { $set: updateObject },
       { new: true, runValidators: true },
-    );
+    ).populate('cart');
 
     if (!session) {
       return { success: false, error: 'Session not found' };
@@ -112,10 +121,12 @@ export const convertToAuthSession = async (
         expires: new Date(Date.now() + SESSION_DURATION),
       },
       { new: true },
-    );
+    ).populate('cart');
+
     if (!session) {
       return { success: false, error: 'Session not found' };
     }
+
     return { success: true, data: session };
   } catch (error) {
     return {
