@@ -13,6 +13,9 @@ import {
 import * as SessionService from './session.service';
 import bcrypt from 'bcrypt';
 
+// Konstante für bcrypt Salting-Runden für Konsistenz
+const SALT_ROUNDS = 10;
+
 export const register = async (
   email: string,
   password: string,
@@ -29,15 +32,16 @@ export const register = async (
       };
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Verwende direkt bcrypt.hash mit SALT_ROUNDS statt separatem genSalt
+    const hashedPassword = await bcrypt.hash(String(password), SALT_ROUNDS);
 
-    const user: IUser | null = new User({
+    const user = new User({
       email,
       password: hashedPassword,
       firstName,
       lastName,
       role: 'customer',
+      tokenVersion: 0, // Explizit setzen
     });
 
     await user.save();
@@ -77,6 +81,7 @@ export const register = async (
       },
     };
   } catch (error) {
+    console.error('Registration error:', error);
     return {
       success: false,
       error:
@@ -93,7 +98,7 @@ export const login = async (
   sessionId?: string,
 ): Promise<AuthResponse> => {
   try {
-    const user: IUser | null = await User.findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) {
       return {
         success: false,
@@ -101,7 +106,11 @@ export const login = async (
       };
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Stelle sicher, dass beide Werte als Strings behandelt werden
+    const plainPassword = String(password);
+    const storedHash = String(user.password);
+
+    const isPasswordValid = await bcrypt.compare(plainPassword, storedHash);
     if (!isPasswordValid) {
       return {
         success: false,
@@ -144,6 +153,7 @@ export const login = async (
       },
     };
   } catch (error) {
+    console.error('Login error:', error);
     return {
       success: false,
       error:
@@ -218,6 +228,7 @@ export const refreshToken = async (
       },
     };
   } catch (error) {
+    console.error('Token refresh error:', error);
     return {
       success: false,
       error:
@@ -253,6 +264,7 @@ export const logout = async (
       data: null,
     };
   } catch (error) {
+    console.error('Logout error:', error);
     return {
       success: false,
       error:
@@ -263,9 +275,7 @@ export const logout = async (
 
 export const getCurrentUser = async (userId: string): Promise<AuthResponse> => {
   try {
-    const user: IUser | null = await User.findById(userId).select(
-      '-password -refreshToken',
-    );
+    const user = await User.findById(userId).select('-password -refreshToken');
     if (!user) {
       return {
         success: false,
@@ -286,6 +296,7 @@ export const getCurrentUser = async (userId: string): Promise<AuthResponse> => {
       },
     };
   } catch (error) {
+    console.error('Get current user error:', error);
     return {
       success: false,
       error:
@@ -300,7 +311,7 @@ export const changePassword = async (
   newPassword: string,
 ): Promise<AuthResponse> => {
   try {
-    const user: IUser | null = await User.findById(userId);
+    const user = await User.findById(userId);
     if (!user) {
       return {
         success: false,
@@ -308,10 +319,11 @@ export const changePassword = async (
       };
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      currentPassword,
-      user.password,
-    );
+    // Stelle sicher, dass beide Werte als Strings behandelt werden
+    const plainPassword = String(currentPassword);
+    const storedHash = String(user.password);
+
+    const isPasswordValid = await bcrypt.compare(plainPassword, storedHash);
     if (!isPasswordValid) {
       return {
         success: false,
@@ -319,8 +331,8 @@ export const changePassword = async (
       };
     }
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    // Verwende direkt bcrypt.hash mit SALT_ROUNDS statt separatem genSalt
+    user.password = await bcrypt.hash(String(newPassword), SALT_ROUNDS);
 
     user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
@@ -356,6 +368,7 @@ export const changePassword = async (
       },
     };
   } catch (error) {
+    console.error('Change password error:', error);
     return {
       success: false,
       error:
@@ -381,6 +394,7 @@ export const validateToken = async (token: string): Promise<AuthResponse> => {
       data: null,
     };
   } catch (error) {
+    console.error('Token validation error:', error);
     return {
       success: false,
       error:
