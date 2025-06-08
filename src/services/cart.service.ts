@@ -218,6 +218,80 @@ export const updateCartItem = async (
   }
 };
 
+export type cartItemsTest = Array<{ productId: string; quantity: number }>;
+
+export const replaceCartItems = async (
+  sessionId: string,
+  items: cartItemsTest,
+): Promise<CartResponse> => {
+  try {
+    // Find or create cart
+    let cart = await Cart.findOne({ sessionId });
+    if (!cart) {
+      cart = new Cart({ sessionId, items: [] });
+    }
+
+    // Validate all products first
+    const validatedItems = [];
+
+    for (const item of items) {
+      // Validate ObjectId
+      if (!mongoose.Types.ObjectId.isValid(item.productId)) {
+        return {
+          success: false,
+          error: `Invalid product ID: ${item.productId}`,
+        };
+      }
+
+      // Check if product exists
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return {
+          success: false,
+          error: `Product not found: ${item.productId}`,
+        };
+      }
+
+      // Check if product is active
+      if (!product.isActive) {
+        return {
+          success: false,
+          error: `Product is not available: ${product.name}`,
+        };
+      }
+
+      // Check stock
+      if (product.stockQuantity < item.quantity) {
+        return {
+          success: false,
+          error: `Not enough stock for ${product.name}. Available: ${product.stockQuantity}, Requested: ${item.quantity}`,
+        };
+      }
+
+      // Add validated item
+      validatedItems.push({
+        productId: item.productId,
+        quantity: item.quantity,
+        price: product.price,
+      });
+    }
+
+    // If all validations pass, replace items
+    cart.items = validatedItems;
+    cart.calculateTotal();
+
+    await cart.save();
+    const populatedCart = await cart.populate('items.productId');
+
+    return { success: true, data: populatedCart };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
 // Todo: control after fix of user service
 export const updateCartUserInfo = async (
   sessionId: string,
@@ -366,6 +440,52 @@ export const updateCartGuestInfo = async (
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
 
+    return { success: true, data: populatedCart };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+
+export const updateCart = async (
+  data: CartCreateData,
+): Promise<CartResponse> => {
+  try {
+    const { sessionId, userId, items = [] } = data;
+
+    const cart = await Cart.findOne({ sessionId });
+    if (!cart) {
+      return { success: false, error: 'Cart not found' };
+    }
+
+    cart.items = [];
+
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return {
+          success: false,
+          error: `Product with ID ${item.productId} not found`,
+        };
+      }
+
+      cart.items.push({
+        productId: item.productId,
+        quantity: item.quantity,
+        price: product.price,
+      });
+    }
+
+    if (userId) {
+      cart.userId = userId;
+    }
+
+    cart.calculateTotal?.();
+    await cart.save();
+
+    const populatedCart = await cart.populate('items.productId');
     return { success: true, data: populatedCart };
   } catch (error) {
     return {

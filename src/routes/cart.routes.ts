@@ -10,6 +10,7 @@ import {
   updateCartAddress,
   updateCartPayment,
   updateCartGuestInfo,
+  replaceCartItems,
 } from '../controllers/cart.controller';
 
 // works as intended
@@ -26,6 +27,10 @@ router
 router
   .route('/:sessionId/address')
   .put((req: CartRequest, res: Response) => updateCartAddress(req, res));
+
+router
+  .route('/:sessionId/items')
+  .put((req: CartRequest, res: Response) => replaceCartItems(req, res));
 
 router
   .route('/:sessionId/payment/:paymentId')

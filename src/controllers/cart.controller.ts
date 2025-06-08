@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import * as CartService from '../services/cart.service';
 import { CartCreateData, CartRequest } from '../models/cart.model';
+import { cartItemsTest } from '../services/cart.service';
 
 // works as intended
 export const createCart = async (
@@ -192,6 +193,54 @@ export const updateCartItem = async (
   }
 };
 
+export const replaceCartItems = async (
+  req: CartRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { sessionId } = req.params;
+    const { items } = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'Items array is required and cannot be empty',
+      });
+      return;
+    }
+
+    // Validate item structure
+    const invalidItems = items.filter(
+      (item) => !item.productId || !item.quantity || item.quantity < 1,
+    );
+
+    if (invalidItems.length > 0) {
+      res.status(400).json({
+        success: false,
+        error: 'All items must have valid productId and quantity (min 1)',
+      });
+      return;
+    }
+
+    const cart = await CartService.replaceCartItems(
+      sessionId,
+      items as cartItemsTest,
+    );
+
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
+
+    res.status(200).json(cart);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error replacing cart items',
+    });
+  }
+};
+
 // Todo: control after fix of user service
 export const updateCartUserInfo = async (
   req: CartRequest,
@@ -316,6 +365,38 @@ export const updateCartGuestInfo = async (
     res.status(500).json({
       success: false,
       error: 'Error updating guest information',
+    });
+  }
+};
+
+// NEW: Update complete cart
+export const updateCart = async (
+  req: CartRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { sessionId, userId } = req.params;
+
+    const data: CartCreateData = {
+      sessionId,
+      userId,
+      items: req.body.items?.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity || 1,
+      })),
+    };
+
+    const cart = await CartService.updateCart(data);
+    if (!cart.success) {
+      res.status(400).json(cart);
+      return;
+    }
+
+    res.status(200).json(cart);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error updating cart',
     });
   }
 };
