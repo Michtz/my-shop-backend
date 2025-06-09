@@ -20,6 +20,7 @@ export interface IProduct {
   stockQuantity: number;
   category: string;
   isActive: boolean;
+  imageUrl?: string;
   lastUpdated: Date;
 }
 
@@ -33,7 +34,11 @@ export interface ProductRequest extends Request {
     price?: number;
     stockQuantity?: number;
     category?: string;
+    imageUrl?: string;
+    data?: string; // check if needed
+    [key: string]: any;
   };
+  file?: Express.Multer.File;
 }
 
 export interface IProductDocument extends IProduct, Document {}
@@ -67,6 +72,10 @@ const productSchema = new Schema<IProductDocument>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    imageUrl: {
+      type: String,
+      required: false,
     },
     lastUpdated: {
       type: Date,

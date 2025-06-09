@@ -54,7 +54,19 @@ export const createProduct = async (
   res: Response,
 ): Promise<void> => {
   try {
-    if (!req.body.name || !req.body.price) {
+    // Parse JSON data from multipart form wenn vorhanden
+    let productData: any = req.body;
+
+    if (req.body.data) {
+      try {
+        productData = JSON.parse(req.body.data);
+      } catch (parseError) {
+        // Falls data nicht JSON ist, nutze direkt req.body
+        productData = req.body;
+      }
+    }
+
+    if (!productData.name || !productData.price) {
       res.status(400).json({
         success: false,
         error: 'Name and price are required',
@@ -62,7 +74,15 @@ export const createProduct = async (
       return;
     }
 
-    const result = await ProductService.createProduct(req.body);
+    // Parse numerische Werte falls sie als String kommen (multipart/form-data)
+    if (typeof productData.price === 'string') {
+      productData.price = parseFloat(productData.price);
+    }
+    if (typeof productData.stockQuantity === 'string') {
+      productData.stockQuantity = parseInt(productData.stockQuantity, 10);
+    }
+
+    const result = await ProductService.createProduct(productData, req.file);
     const status = result.success ? 201 : 400;
     res.status(status).json(result);
   } catch (error) {
@@ -87,10 +107,31 @@ export const updateProduct = async (
       return;
     }
 
-    const result = await ProductService.updateProduct(id, {
-      ...req.body,
-      lastUpdated: new Date(),
-    });
+    // Parse JSON data from multipart form wenn vorhanden
+    let updateData: any = req.body;
+
+    if (req.body.data) {
+      try {
+        updateData = JSON.parse(req.body.data);
+      } catch (parseError) {
+        // Falls data nicht JSON ist, nutze direkt req.body
+        updateData = req.body;
+      }
+    }
+
+    // Parse numerische Werte falls sie als String kommen (multipart/form-data)
+    if (typeof updateData.price === 'string') {
+      updateData.price = parseFloat(updateData.price);
+    }
+    if (typeof updateData.stockQuantity === 'string') {
+      updateData.stockQuantity = parseInt(updateData.stockQuantity, 10);
+    }
+
+    const result = await ProductService.updateProduct(
+      id,
+      { ...updateData, lastUpdated: new Date() },
+      req.file,
+    );
 
     const status = result.success
       ? 200

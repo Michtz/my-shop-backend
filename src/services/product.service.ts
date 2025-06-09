@@ -5,6 +5,11 @@ import {
   ProductFilters,
 } from '../models/product.model';
 import { emitLowStockAlert, emitProductUpdate } from './socket.service';
+import {
+  uploadProductImage as uploadToCloudinary,
+  deleteProductImage,
+  extractPublicId,
+} from './cloudinary.service';
 
 export const getAllProducts = async (
   filters: ProductFilters = {},
@@ -40,6 +45,7 @@ export const getProductById = async (
 
 export const createProduct = async (
   productData: Partial<IProduct>,
+  imageFile?: Express.Multer.File,
 ): Promise<ProductResponse> => {
   try {
     const existingProduct = await Product.findOne({ name: productData.name });
@@ -49,6 +55,19 @@ export const createProduct = async (
         error: 'A product with this name already exists.',
       };
     }
+
+    // Bild hochladen falls vorhanden
+    if (imageFile) {
+      const uploadResult = await uploadToCloudinary(imageFile);
+      if (!uploadResult.success) {
+        return {
+          success: false,
+          error: `Image upload failed: ${uploadResult.error}`,
+        };
+      }
+      productData.imageUrl = uploadResult.url;
+    }
+
     const product = await Product.create(productData);
 
     emitProductUpdate(product);
@@ -69,13 +88,41 @@ export const createProduct = async (
 export const updateProduct = async (
   productId: string,
   updateData: Partial<IProduct>,
+  imageFile?: Express.Multer.File,
 ): Promise<ProductResponse> => {
   try {
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+      return { success: false, error: 'Product not found' };
+    }
+
+    // Neues Bild hochladen falls vorhanden
+    if (imageFile) {
+      // Altes Bild löschen falls vorhanden
+      if (existingProduct.imageUrl) {
+        const oldPublicId = extractPublicId(existingProduct.imageUrl);
+        if (oldPublicId) {
+          await deleteProductImage(oldPublicId);
+        }
+      }
+
+      // Neues Bild hochladen
+      const uploadResult = await uploadToCloudinary(imageFile);
+      if (!uploadResult.success) {
+        return {
+          success: false,
+          error: `Image upload failed: ${uploadResult.error}`,
+        };
+      }
+      updateData.imageUrl = uploadResult.url;
+    }
+
     const product = await Product.findByIdAndUpdate(
       productId,
       { ...updateData, lastUpdated: Date.now() },
       { new: true, runValidators: true },
     );
+
     if (!product) {
       return { success: false, error: 'Product not found' };
     }
@@ -113,16 +160,12 @@ export const updateStock = async (
     product.lastUpdated = new Date();
     await product.save();
 
-    // Produkt-Update-Event senden
     emitProductUpdate(product);
 
-    // Überprüfen, ob ein Alarm für niedrigen Bestand gesendet werden sollte
     if (product.stockQuantity <= 5) {
       emitLowStockAlert(product);
     }
 
-    // Wenn der Bestand von ausreichend zu knapp oder ausverkauft wechselt,
-    // könnte man ein spezielles Event senden
     if (previousStock > 5 && product.stockQuantity <= 5) {
       console.log(
         `Product ${product.name} is now low in stock: ${product.stockQuantity} remaining`,
@@ -142,11 +185,25 @@ export const deleteProduct = async (
   productId: string,
 ): Promise<ProductResponse> => {
   try {
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+      return { success: false, error: 'Product not found' };
+    }
+
+    // Bild löschen falls vorhanden
+    if (existingProduct.imageUrl) {
+      const publicId = extractPublicId(existingProduct.imageUrl);
+      if (publicId) {
+        await deleteProductImage(publicId);
+      }
+    }
+
     const product = await Product.findByIdAndUpdate(
       productId,
       { isActive: false, lastUpdated: Date.now() },
       { new: true },
     );
+
     if (!product) {
       return { success: false, error: 'Product not found' };
     }

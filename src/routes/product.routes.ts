@@ -1,26 +1,38 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import * as ProductController from '../controllers/product.controller';
 import {
-    getAllProducts,
-    getProductById,
-    createProduct,
-    updateProduct,
-    updateStock,
-    deleteProduct
-} from '../controllers/product.controller';
-import {ProductRequest} from "../models/product.model";
+  uploadProductImage,
+  handleUploadError,
+} from '../middleware/upload.middleware';
 
 const router = Router();
 
-router.route('/')
-    .get((req: Request, res: Response) => getAllProducts(req, res))
-    .post((req: ProductRequest, res: Response) => createProduct(req, res));
+// GET alle Produkte
+router.get('/', ProductController.getAllProducts);
 
-router.route('/:id')
-    .get((req: ProductRequest, res: Response) => getProductById(req, res))
-    .put((req: ProductRequest, res: Response) => updateProduct(req, res))
-    .delete((req: ProductRequest, res: Response) => deleteProduct(req, res));
+// GET Produkt nach ID
+router.get('/:id', ProductController.getProductById);
 
-router.route('/:id/stock')
-    .patch((req: ProductRequest, res: Response) => updateStock(req, res));
+// POST neues Produkt (mit optionalem Bild-Upload)
+router.post(
+  '/',
+  uploadProductImage,
+  handleUploadError,
+  ProductController.createProduct,
+);
+
+// PUT Produkt updaten (mit optionalem Bild-Upload)
+router.put(
+  '/:id',
+  uploadProductImage,
+  handleUploadError,
+  ProductController.updateProduct,
+);
+
+// PATCH Stock updaten (kein Bild-Upload)
+router.patch('/:id/stock', ProductController.updateStock);
+
+// DELETE Produkt (Soft Delete)
+router.delete('/:id', ProductController.deleteProduct);
 
 export default router;
