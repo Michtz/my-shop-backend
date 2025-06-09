@@ -20,25 +20,57 @@ export const uploadProductImage = async (
   file: Express.Multer.File,
 ): Promise<CloudinaryResponse> => {
   try {
+    console.log('📸 Starting image upload:', {
+      filename: file.filename,
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      hasBuffer: !!file.buffer,
+      bufferLength: file.buffer?.length,
+    });
+
+    if (!file.buffer) {
+      throw new Error('No file buffer available');
+    }
+
     const fileExtension = path.extname(file.originalname);
     const publicId = `products/${uuidv4()}${fileExtension}`;
 
-    const result = await cloudinary.uploader.upload(file.path, {
-      public_id: publicId,
-      folder: 'myshop/products',
-      resource_type: 'image',
-      transformation: [
-        { width: 800, height: 600, crop: 'limit' },
-        { quality: 'auto', fetch_format: 'auto' },
-      ],
+    // Upload from buffer using upload_stream
+    const result = await new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          public_id: publicId,
+          folder: 'myshop/products',
+          resource_type: 'image',
+          transformation: [
+            { width: 800, height: 600, crop: 'limit' },
+            { quality: 'auto', fetch_format: 'auto' },
+          ],
+        },
+        (error, result) => {
+          if (error) {
+            console.error('❌ Cloudinary upload error:', error);
+            reject(error);
+          } else {
+            console.log('✅ Upload successful:', result?.secure_url);
+            resolve(result);
+          }
+        },
+      );
+
+      // Write buffer to stream
+      uploadStream.end(file.buffer);
     });
 
     return {
       success: true,
-      url: result.secure_url,
-      publicId: result.public_id,
+      url: (result as any).secure_url,
+      publicId: (result as any).public_id,
     };
   } catch (error) {
+    console.error('❌ Upload failed:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Upload failed',
