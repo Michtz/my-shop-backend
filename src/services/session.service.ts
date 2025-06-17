@@ -17,7 +17,11 @@ export const createSession = async (
       expires: new Date(Date.now() + SESSION_DURATION),
       isAuthenticated: false,
     });
-    return { success: true, data: session };
+
+    return {
+      success: true,
+      data: session.toObject(),
+    };
   } catch (error) {
     return {
       success: false,
@@ -30,13 +34,14 @@ export const getSession = async (
   sessionId: string,
 ): Promise<SessionResponse> => {
   try {
-    let query = Session.findOne({ sessionId });
-
-    const session = await query.exec();
+    const session = await Session.findOne({ sessionId }).exec();
 
     if (!session) return { success: false, error: 'Session not found' };
 
-    return { success: true, data: session };
+    return {
+      success: true,
+      data: session.toObject(),
+    };
   } catch (error) {
     return {
       success: false,
@@ -49,11 +54,12 @@ export const getAllSessions = async (
   filter: any = {},
 ): Promise<SessionResponse> => {
   try {
-    let query = Session.find(filter);
+    const sessions = await Session.find(filter).exec();
 
-    const sessions = await query.exec();
-
-    return { success: true, data: sessions };
+    return {
+      success: true,
+      data: sessions.map((session) => session.toObject()),
+    };
   } catch (error) {
     return {
       success: false,
@@ -98,7 +104,10 @@ export const updateSession = async (
       return { success: false, error: 'Session not found' };
     }
 
-    return { success: true, data: session };
+    return {
+      success: true,
+      data: session.toObject(),
+    };
   } catch (error) {
     return {
       success: false,
@@ -127,7 +136,10 @@ export const convertToAuthSession = async (
       return { success: false, error: 'Session not found' };
     }
 
-    return { success: true, data: session };
+    return {
+      success: true,
+      data: session.toObject(),
+    };
   } catch (error) {
     return {
       success: false,
@@ -144,7 +156,11 @@ export const deleteSession = async (
     if (!session) {
       return { success: false, error: 'Session not found' };
     }
-    return { success: true, data: session };
+
+    return {
+      success: true,
+      data: session.toObject(),
+    };
   } catch (error) {
     return {
       success: false,

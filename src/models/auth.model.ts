@@ -15,6 +15,8 @@ export interface AuthResponse {
     };
   } | null;
   error?: string;
+  token?: string;
+  sessionId?: string;
 }
 
 export interface AuthRequest extends Request {
@@ -33,6 +35,7 @@ export interface AuthRequest extends Request {
     email: string;
     role: string;
   };
+  sessionId?: string;
 }
 
 export interface IBlacklistedToken extends Document {
@@ -40,8 +43,6 @@ export interface IBlacklistedToken extends Document {
   createdAt: Date;
 }
 
-// Schema for blacklisted tokens
-// This is used instead of a full session model for JWT implementation
 const blacklistedTokenSchema = new Schema<IBlacklistedToken>({
   token: {
     type: String,

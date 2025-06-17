@@ -2,14 +2,21 @@ import { Response } from 'express';
 import * as AuthService from '../services/auth.service';
 import { AuthRequest } from '../models/auth.model';
 import { verifyToken } from '../utils/jwt.utils';
-import authRoutes from '../routes/auth.routes';
+import {
+  setSessionCookie,
+  setAuthTokenCookie,
+  clearAllAuthCookies,
+} from '../utils/cookie.utils';
 
 export const register = async (
   req: AuthRequest,
   res: Response,
 ): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, sessionId } = req.body;
+    const { email, password, firstName, lastName } = req.body;
+
+    // SessionId aus Cookie holen, falls vorhanden
+    const sessionId = req.cookies?.sessionId;
 
     if (!email || !password || !firstName || !lastName) {
       res.status(400).json({
@@ -32,7 +39,22 @@ export const register = async (
       return;
     }
 
-    res.status(201).json(result);
+    // Session Cookie setzen, falls neue Session erstellt wurde
+    if (result.sessionId) {
+      setSessionCookie(res, result.sessionId);
+    }
+
+    // Auth Token Cookie setzen
+    if (result.token) {
+      setAuthTokenCookie(res, result.token);
+    }
+
+    res.status(201).json({
+      ...result,
+      // Token und SessionId aus Response entfernen (sind jetzt in Cookies)
+      token: undefined,
+      sessionId: undefined,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -43,7 +65,10 @@ export const register = async (
 
 export const login = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { email, password, sessionId } = req.body;
+    const { email, password } = req.body;
+
+    // SessionId aus Cookie holen, falls vorhanden
+    const sessionId = req.cookies?.sessionId;
 
     if (!email || !password) {
       res.status(400).json({
@@ -60,7 +85,22 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
       return;
     }
 
-    res.status(200).json(result);
+    // Session Cookie setzen
+    if (result.sessionId) {
+      setSessionCookie(res, result.sessionId);
+    }
+
+    // Auth Token Cookie setzen
+    if (result.token) {
+      setAuthTokenCookie(res, result.token);
+    }
+
+    res.status(200).json({
+      ...result,
+      // Token und SessionId aus Response entfernen (sind jetzt in Cookies)
+      token: undefined,
+      sessionId: undefined,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -91,7 +131,15 @@ export const refreshToken = async (
       return;
     }
 
-    res.status(200).json(result);
+    // Neuen Token als Cookie setzen
+    if (result.token) {
+      setAuthTokenCookie(res, result.token);
+    }
+
+    res.status(200).json({
+      ...result,
+      token: undefined, // Token aus Response entfernen
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -105,19 +153,26 @@ export const logout = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
-    const { sessionId } = req.body;
+    // Token aus Cookie oder Authorization Header holen
+    const authToken =
+      req.cookies?.authToken ||
+      (req.headers.authorization && req.headers.authorization.split(' ')[1]);
 
-    if (!token) {
+    // SessionId aus Cookie holen
+    const sessionId = req.cookies?.sessionId;
+
+    if (!authToken) {
       res.status(400).json({
         success: false,
-        error: 'Token is required',
+        error: 'Authentication required',
       });
       return;
     }
 
-    const result = await AuthService.logout(token, sessionId);
+    const result = await AuthService.logout(authToken, sessionId);
+
+    // Alle Auth-Cookies löschen, auch wenn Logout-Service fehlschlägt
+    clearAllAuthCookies(res);
 
     if (!result.success) {
       res.status(400).json(result);
@@ -126,6 +181,9 @@ export const logout = async (
 
     res.status(200).json(result);
   } catch (error) {
+    // Cookies trotzdem löschen bei Fehlern
+    clearAllAuthCookies(res);
+
     res.status(500).json({
       success: false,
       error: 'Error logging out',
@@ -138,10 +196,12 @@ export const getCurrentUser = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    // Token aus Cookie oder Authorization Header holen
+    const authToken =
+      req.cookies?.authToken ||
+      (req.headers.authorization && req.headers.authorization.split(' ')[1]);
 
-    if (!token) {
+    if (!authToken) {
       res.status(401).json({
         success: false,
         error: 'Authentication required',
@@ -149,8 +209,9 @@ export const getCurrentUser = async (
       return;
     }
 
-    const decodedToken = verifyToken(token);
+    const decodedToken = verifyToken(authToken);
     if (!decodedToken) {
+      clearAllAuthCookies(res); // Ungültiges Token -> Cookies löschen
       res.status(401).json({
         success: false,
         error: 'Invalid token',
@@ -223,11 +284,12 @@ export const validateToken = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-    console.log(req.headers);
-    const token = authHeader && authHeader.split(' ')[1];
+    // Token aus Cookie oder Authorization Header holen
+    const authToken =
+      req.cookies?.authToken ||
+      (req.headers.authorization && req.headers.authorization.split(' ')[1]);
 
-    if (!token) {
+    if (!authToken) {
       res.status(401).json({
         success: false,
         error: 'Token is required',
@@ -235,9 +297,10 @@ export const validateToken = async (
       return;
     }
 
-    const result = await AuthService.validateToken(token);
+    const result = await AuthService.validateToken(authToken);
 
     if (!result.success) {
+      clearAllAuthCookies(res); // Ungültiges Token -> Cookies löschen
       res.status(401).json(result);
       return;
     }

@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { verifyToken, isTokenBlacklisted } from '../utils/jwt.utils';
 import { AuthRequest } from '../models/auth.model';
+import { clearAllAuthCookies } from '../utils/cookie.utils';
 
 export const authenticate = async (
   req: AuthRequest,
@@ -9,7 +10,10 @@ export const authenticate = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const headerToken = authHeader && authHeader.split(' ')[1];
+    const cookieToken = req.cookies?.authToken;
+
+    const token = headerToken || cookieToken;
 
     if (!token) {
       res.status(401).json({
@@ -21,6 +25,7 @@ export const authenticate = async (
 
     const blacklisted = await isTokenBlacklisted(token);
     if (blacklisted) {
+      clearAllAuthCookies(res);
       res.status(401).json({
         success: false,
         error: 'Token is no longer valid',
@@ -30,6 +35,7 @@ export const authenticate = async (
 
     const decodedToken = verifyToken(token);
     if (!decodedToken) {
+      clearAllAuthCookies(res);
       res.status(401).json({
         success: false,
         error: 'Invalid token',
@@ -45,6 +51,7 @@ export const authenticate = async (
 
     next();
   } catch (error) {
+    clearAllAuthCookies(res);
     res.status(401).json({
       success: false,
       error: 'Authentication failed',
@@ -72,4 +79,30 @@ export const authorize = (roles: string[]) => {
 
     next();
   };
+};
+
+export const sessionMiddleware = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const sessionId = req.cookies?.sessionId;
+
+    if (!sessionId) {
+      res.status(401).json({
+        success: false,
+        error: 'Session required',
+      });
+      return;
+    }
+
+    req.sessionId = sessionId;
+    next();
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      error: 'Session validation failed',
+    });
+  }
 };

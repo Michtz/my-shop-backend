@@ -150,3 +150,93 @@ export const deleteSession = async (
     });
   }
 };
+
+export const getCurrentSession = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sessionId = req.cookies?.sessionId;
+
+    if (!sessionId) {
+      res.status(400).json({
+        success: false,
+        error: 'No session cookie found',
+      });
+      return;
+    }
+
+    const result = await SessionService.getSession(sessionId);
+    const status = result.success
+      ? 200
+      : result.error === 'Session not found'
+        ? 404
+        : 500;
+    res.status(status).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching current session',
+    });
+  }
+};
+
+export const updateCurrentSession = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sessionId = req.cookies?.sessionId;
+
+    if (!sessionId) {
+      res.status(400).json({
+        success: false,
+        error: 'No session cookie found',
+      });
+      return;
+    }
+
+    const result = await SessionService.updateSession(sessionId, req.body);
+    const status = result.success
+      ? 200
+      : result.error === 'Session not found'
+        ? 404
+        : 500;
+    res.status(status).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server error while updating current session',
+    });
+  }
+};
+
+export const deleteCurrentSession = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const sessionId = req.cookies?.sessionId;
+
+    if (!sessionId) {
+      res.status(400).json({
+        success: false,
+        error: 'No session cookie found',
+      });
+      return;
+    }
+
+    const result = await SessionService.deleteSession(sessionId);
+    const status = result.success
+      ? 200
+      : result.error === 'Session not found'
+        ? 404
+        : 500;
+    res.status(status).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server error while deleting current session',
+    });
+  }
+};

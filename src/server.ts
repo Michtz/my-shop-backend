@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
+import cookieParser from 'cookie-parser';
 import { initializeSocketIO } from './services/socket.service';
 
 import sessionRoutes from './routes/session.routes';
@@ -13,13 +14,20 @@ import connectDB from './config/db';
 import authRoutes from './routes/auth.routes';
 
 connectDB();
-/* ToDo: add joi as validation "maybe": https://joi.dev/ */
 dotenv.config();
 
 const app: Express = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
+app.use(cookieParser());
+
 const server = http.createServer(app);
 
 app.get('/test', (req: Request, res: Response) => {
