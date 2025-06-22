@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Request } from 'express';
+import { IAddress, IPaymentInfo } from './user.model';
 
 export interface AuthResponse {
   success: boolean;
@@ -11,6 +12,9 @@ export interface AuthResponse {
       email: string;
       firstName: string;
       lastName: string;
+      phoneNumber?: string;
+      addresses?: IAddress[];
+      paymentInfo?: IPaymentInfo[];
       role: string;
     };
   } | null;

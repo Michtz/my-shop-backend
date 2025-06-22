@@ -9,6 +9,7 @@ import {
   getCurrentUser,
   changePassword,
   validateToken,
+  updateUserController,
 } from '../controllers/auth.controller';
 import { authenticate, authorize } from '../middleware/auth.middelware';
 
@@ -44,6 +45,11 @@ router
   .route('/change-password')
   .post(authenticate, (req: AuthRequest, res: Response) =>
     changePassword(req, res),
+  );
+router
+  .route('/change-user-info')
+  .post(authenticate, (req: AuthRequest, res: Response) =>
+    updateUserController(req, res),
   );
 
 router

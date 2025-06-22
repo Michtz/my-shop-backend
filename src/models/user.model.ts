@@ -33,6 +33,15 @@ export interface IUser extends Document {
   updatedAt: Date;
 }
 
+export interface UpdateUserData {
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  addresses?: IAddress[];
+  paymentInfo?: IPaymentInfo[];
+}
+
 export const addressSchema = new Schema<IAddress>({
   street: { type: String, required: true },
   city: { type: String, required: true },

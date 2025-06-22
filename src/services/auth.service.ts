@@ -1,5 +1,5 @@
-import { AuthResponse } from '../models/auth.model';
-import { User } from '../models/user.model';
+import { AuthRequest, AuthResponse } from '../models/auth.model';
+import { UpdateUserData, User } from '../models/user.model';
 import {
   generateToken,
   generateRefreshToken,
@@ -298,6 +298,57 @@ export const getCurrentUser = async (userId: string): Promise<AuthResponse> => {
       success: false,
       error:
         error instanceof Error ? error.message : 'Unknown error fetching user',
+    };
+  }
+};
+
+export const updateUser = async (
+  userId: string,
+  updateData: UpdateUserData,
+): Promise<AuthResponse> => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return {
+        success: false,
+        error: 'User not found',
+      };
+    }
+
+    if (updateData.email !== undefined) user.email = updateData.email;
+    if (updateData.firstName !== undefined)
+      user.firstName = updateData.firstName;
+    if (updateData.lastName !== undefined) user.lastName = updateData.lastName;
+    if (updateData.phoneNumber !== undefined)
+      user.phoneNumber = updateData.phoneNumber;
+    if (updateData.addresses !== undefined)
+      user.addresses = updateData.addresses;
+    if (updateData.paymentInfo !== undefined)
+      user.paymentInfo = updateData.paymentInfo;
+
+    await user.save();
+
+    return {
+      success: true,
+      data: {
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          addresses: user.addresses,
+          paymentInfo: user.paymentInfo,
+        },
+      },
+    };
+  } catch (error) {
+    console.error('Update user error:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Unknown error updating user',
     };
   }
 };

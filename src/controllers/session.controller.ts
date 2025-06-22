@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as SessionService from '../services/session.service';
 import { SessionRequest } from '../models/session.model';
+import { setSessionCookie } from '../utils/cookie.utils';
 
 export const createSession = async (
   req: Request,
@@ -8,6 +9,8 @@ export const createSession = async (
 ): Promise<void> => {
   try {
     const result = await SessionService.createSession(req.body.data);
+    setSessionCookie(res, result.data.sessionId);
+
     const status = result.success ? 201 : 400;
     res.status(status).json(result);
   } catch (error) {
@@ -159,7 +162,7 @@ export const getCurrentSession = async (
     const sessionId = req.cookies?.sessionId;
 
     if (!sessionId) {
-      res.status(400).json({
+      res.status(200).json({
         success: false,
         error: 'No session cookie found',
       });

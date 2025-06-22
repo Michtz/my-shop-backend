@@ -7,6 +7,7 @@ import {
   setAuthTokenCookie,
   clearAllAuthCookies,
 } from '../utils/cookie.utils';
+import { updateUser } from '../services/auth.service';
 
 export const register = async (
   req: AuthRequest,
@@ -275,6 +276,46 @@ export const changePassword = async (
     res.status(500).json({
       success: false,
       error: 'Error changing password',
+    });
+  }
+};
+
+export const updateUserController = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const updateData = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+      });
+      return;
+    }
+
+    if (!updateData || Object.keys(updateData).length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'Update data is required',
+      });
+      return;
+    }
+
+    const result = await updateUser(userId, updateData);
+
+    if (!result.success) {
+      res.status(400).json(result);
+      return;
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Error updating user',
     });
   }
 };
