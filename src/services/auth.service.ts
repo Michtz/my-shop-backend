@@ -279,7 +279,7 @@ export const getCurrentUser = async (userId: string): Promise<AuthResponse> => {
         error: 'User not found',
       };
     }
-
+    console.log(user);
     return {
       success: true,
       data: {
@@ -288,6 +288,8 @@ export const getCurrentUser = async (userId: string): Promise<AuthResponse> => {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          phoneNumber: user.phoneNumber,
+          addresses: user.addresses,
           role: user.role,
         },
       },
@@ -308,13 +310,15 @@ export const updateUser = async (
 ): Promise<AuthResponse> => {
   try {
     const user = await User.findById(userId);
+    console.log('new data', updateData, 'user', user);
+
     if (!user) {
       return {
         success: false,
         error: 'User not found',
       };
     }
-
+    console.log('user found');
     if (updateData.email !== undefined) user.email = updateData.email;
     if (updateData.firstName !== undefined)
       user.firstName = updateData.firstName;
@@ -325,7 +329,7 @@ export const updateUser = async (
       user.addresses = updateData.addresses;
     if (updateData.paymentInfo !== undefined)
       user.paymentInfo = updateData.paymentInfo;
-
+    console.log(user);
     await user.save();
 
     return {

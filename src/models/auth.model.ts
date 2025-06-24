@@ -33,6 +33,7 @@ export interface AuthRequest extends Request {
     sessionId?: string;
     currentPassword?: string;
     newPassword?: string;
+    userInfo?: any;
   };
   user?: {
     id: string;

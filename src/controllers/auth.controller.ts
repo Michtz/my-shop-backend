@@ -304,7 +304,7 @@ export const updateUserController = async (
       return;
     }
 
-    const result = await updateUser(userId, updateData);
+    const result = await updateUser(userId, updateData.userInfo);
 
     if (!result.success) {
       res.status(400).json(result);
