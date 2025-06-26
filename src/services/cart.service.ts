@@ -302,9 +302,11 @@ export const updateCartUserInfo = async (
     if (!cart) {
       return { success: false, error: 'Cart not found' };
     }
+    console.log(userInfo);
     cart.userInfo = userInfo;
     await cart.save();
     const populatedCart = await cart.populate('userInfo');
+    console.log(populatedCart);
     return { success: true, data: populatedCart };
   } catch (error) {
     return {
