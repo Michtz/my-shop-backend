@@ -1,116 +1,59 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import { Document, Schema, model } from 'mongoose';
 import { Request } from 'express';
-import {
-  userSchema,
-  paymentInfoSchema,
-  IAddress,
-  IPaymentInfo,
-} from './user.model';
+import { v4 as uuidv4 } from 'uuid';
+import { ICartItem, IUserCartInfo } from './cart.model';
 
 export interface OrderResponse {
+  orderNumber?: string;
   success: boolean;
   data?: IOrder | IOrder[] | null;
   error?: string;
 }
 
-export interface OrderRequest extends Request {
-  params: {
-    sessionId?: string;
-    orderId?: string;
+export interface OrderCreateData {
+  sessionId: string;
+  userId?: string;
+  cartSnapshot: {
+    items: ICartItem[];
+    total: number;
+    userInfo?: IUserCartInfo;
   };
-  body: {
-    cartId?: string;
-    status?: Status;
-    shippingDetails?: IShippingAddress;
-    orderType?: 'guest' | 'user';
-    guestInfo?: IGuestOrderInfo;
-    shippingAddressId?: string;
-    billingAddressId?: string;
-    paymentMethodId?: string;
-    notes?: string;
-  };
-}
-
-export type Status =
-  | 'pending'
-  | 'processing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled'
-  | undefined;
-
-export interface IShippingAddress extends IAddress {}
-
-export interface IOrderItem {
-  productId: mongoose.Types.ObjectId;
-  quantity: number;
-  price: number;
-}
-
-export interface IGuestOrderInfo {
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  address: IShippingAddress;
-  consentToMarketing?: boolean;
+  paymentIntentId: string;
 }
 
 export interface IOrder extends Document {
   orderNumber: string;
   sessionId: string;
-  userId?: mongoose.Types.ObjectId;
-  guestInfo?: IGuestOrderInfo;
-  items: IOrderItem[];
-  totalAmount: number;
-  shippingCost: number;
-  tax: number;
-  grandTotal: number;
-  shippingAddress: IShippingAddress;
-  billingAddress?: IShippingAddress;
-  paymentInfo: IPaymentInfo;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  paymentStatus: 'pending' | 'completed' | 'failed' | 'refunded';
-  notes?: string;
-  trackingNumber?: string;
-  estimatedDelivery?: Date;
-  calculateTotal: () => void;
-  updateStatus: (newStatus: string) => Promise<void>;
+  userId?: string;
+  customerInfo?: IUserCartInfo;
+  items: ICartItem[];
+  total: number;
+  paymentIntentId: string;
+  paymentMethod?: {
+    last4: string;
+    brand: string;
+    paymentMethodId?: string;
+  };
+  status: 'paid' | 'completed';
+  paidAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  generateOrderNumber: () => string;
 }
 
-const guestOrderInfoSchema = new Schema<IGuestOrderInfo>({
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    trim: true,
-    lowercase: true,
-    validate: {
-      validator: function (v: string) {
-        return /^\S+@\S+\.\S+$/.test(v);
-      },
-      message: 'Please enter a valid email address',
-    },
-  },
-  firstName: {
-    type: String,
-    required: [true, 'First name is required'],
-    trim: true,
-  },
-  lastName: {
-    type: String,
-    required: [true, 'Last name is required'],
-    trim: true,
-  },
-  phoneNumber: {
-    type: String,
-    trim: true,
-  },
-  address: userSchema,
-  consentToMarketing: {
-    type: Boolean,
-    default: false,
-  },
-});
+export interface OrderRequest extends Request {
+  params: {
+    orderNumber?: string;
+    sessionId?: string;
+    userId?: string;
+  };
+  body: {
+    status?: 'paid' | 'completed';
+    cartSnapshot?: any;
+    paymentIntentId?: string;
+    paymentMethodId?: string;
+  };
+}
 
 const orderSchema = new Schema<IOrder>(
   {
@@ -118,18 +61,22 @@ const orderSchema = new Schema<IOrder>(
       type: String,
       required: true,
       unique: true,
-      index: true,
     },
     sessionId: {
       type: String,
       required: true,
+      index: true,
     },
     userId: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
+      type: String,
       required: false,
+      index: true,
     },
-    guestInfo: guestOrderInfoSchema,
+    customerInfo: {
+      type: Schema.Types.Mixed,
+      required: false,
+      default: undefined,
+    },
     items: [
       {
         productId: {
@@ -140,7 +87,7 @@ const orderSchema = new Schema<IOrder>(
         quantity: {
           type: Number,
           required: true,
-          min: [1, 'Quantity must be at least 1'],
+          min: [1, 'Quantity cannot be less than 1'],
         },
         price: {
           type: Number,
@@ -149,49 +96,31 @@ const orderSchema = new Schema<IOrder>(
         },
       },
     ],
-    totalAmount: {
+    total: {
       type: Number,
       required: true,
-      min: [0, 'Total amount cannot be negative'],
+      min: [0, 'Total cannot be negative'],
     },
-    shippingCost: {
-      type: Number,
+    paymentIntentId: {
+      type: String,
       required: true,
-      default: 0,
+      unique: true,
     },
-    tax: {
-      type: Number,
-      required: true,
-      default: 0,
+    paymentMethod: {
+      last4: { type: String },
+      brand: { type: String },
+      paymentMethodId: { type: String },
     },
-    grandTotal: {
-      type: Number,
-      required: true,
-      min: [0, 'Grand total cannot be negative'],
-    },
-    shippingAddress: userSchema,
-    billingAddress: userSchema,
-    paymentInfo: paymentInfoSchema,
     status: {
       type: String,
-      enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: ['paid', 'completed'],
+      default: 'paid',
+      index: true,
     },
-    paymentStatus: {
-      type: String,
-      enum: ['pending', 'completed', 'failed', 'refunded'],
-      default: 'pending',
-    },
-    notes: {
-      type: String,
-      trim: true,
-    },
-    trackingNumber: {
-      type: String,
-      trim: true,
-    },
-    estimatedDelivery: {
+    paidAt: {
       type: Date,
+      required: true,
+      default: Date.now,
     },
   },
   {
@@ -199,43 +128,39 @@ const orderSchema = new Schema<IOrder>(
   },
 );
 
-orderSchema.methods.calculateTotal = function (this: IOrder): void {
-  this.totalAmount = this.items.reduce((total, item) => {
-    return total + item.price * item.quantity;
-  }, 0);
-
-  this.grandTotal = this.totalAmount + this.shippingCost + this.tax;
+orderSchema.methods.generateOrderNumber = function (this: IOrder): string {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const uuid = uuidv4().slice(0, 8).toUpperCase();
+  return `ORD-${date}-${uuid}`;
 };
 
-orderSchema.methods.updateStatus = async function (
-  this: IOrder,
-  newStatus: string,
-): Promise<void> {
-  if (this.status !== newStatus) {
-    // @ts-ignore
-    this.status = newStatus;
-    await this.save();
-  }
-};
-
-orderSchema.pre('save', async function (next) {
-  if (this.isNew) {
-    const date = new Date();
-    const timestamp = date.getTime().toString().slice(-6);
-    const random = Math.floor(Math.random() * 10000)
-      .toString()
-      .padStart(4, '0');
-    this.orderNumber = `ORD-${timestamp}-${random}`;
-
-    this.calculateTotal();
+orderSchema.pre('save', function (next) {
+  if (this.isNew && !this.orderNumber) {
+    this.orderNumber = this.generateOrderNumber();
   }
   next();
 });
 
-orderSchema.index({ userId: 1, createdAt: -1 });
-orderSchema.index({ 'guestInfo.email': 1 });
-orderSchema.index({ status: 1 });
-orderSchema.index({ paymentStatus: 1 });
-orderSchema.index({ sessionId: 1 });
+orderSchema.set('toJSON', {
+  transform: function (doc, ret) {
+    if (ret.items) {
+      ret.items = ret.items.map((item: { productId: { _id: any } }) => {
+        if (item.productId && typeof item.productId !== 'string') {
+          return {
+            ...item,
+            product: item.productId,
+            productId: item.productId._id,
+          };
+        }
+        return item;
+      });
+    }
+    return ret;
+  },
+});
 
-export const Order = mongoose.model<IOrder>('Order', orderSchema);
+// Compound indexes for faster lookups
+orderSchema.index({ sessionId: 1, userId: 1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+
+export const Order = model<IOrder>('Order', orderSchema);
