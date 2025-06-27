@@ -1,0 +1,28 @@
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-05-28.basil',
+});
+
+export const createPaymentIntent = async (
+  amount: number,
+  sessionId: string,
+) => {
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100, // cents
+      currency: 'eur',
+      metadata: { sessionId },
+    });
+
+    return {
+      success: true,
+      data: { clientSecret: paymentIntent.client_secret },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Payment failed',
+    };
+  }
+};

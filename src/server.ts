@@ -6,6 +6,9 @@ import http from 'http';
 import cookieParser from 'cookie-parser';
 import { initializeSocketIO } from './services/socket.service';
 
+dotenv.config();
+
+import paymentRoutes from './routes/payment.routes';
 import sessionRoutes from './routes/session.routes';
 import orderRoutes from './routes/order.routes';
 import cartRoutes from './routes/cart.routes';
@@ -14,7 +17,6 @@ import connectDB from './config/db';
 import authRoutes from './routes/auth.routes';
 
 connectDB();
-dotenv.config();
 
 const app: Express = express();
 
@@ -63,3 +65,5 @@ mongoose
     });
   })
   .catch((err: Error) => console.error('MongoDB error:', err));
+
+app.use('/api/payment', paymentRoutes);
