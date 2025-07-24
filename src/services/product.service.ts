@@ -4,7 +4,7 @@ import {
   ProductResponse,
   ProductFilters,
 } from '../models/product.model';
-import { emitLowStockAlert, emitProductUpdate } from './socket.service';
+import { emitProductStockUpdated } from './socket.service';
 import {
   uploadProductImage as uploadToCloudinary,
   deleteProductImage,
@@ -70,10 +70,10 @@ export const createProduct = async (
 
     const product = await Product.create(productData);
 
-    emitProductUpdate(product);
+    emitProductStockUpdated(product);
 
     if (product.stockQuantity <= 5) {
-      emitLowStockAlert(product);
+      emitProductStockUpdated(product);
     }
 
     return { success: true, data: product };
@@ -127,10 +127,10 @@ export const updateProduct = async (
       return { success: false, error: 'Product not found' };
     }
 
-    emitProductUpdate(product);
+    emitProductStockUpdated(product);
 
     if (product.stockQuantity <= 5) {
-      emitLowStockAlert(product);
+      emitProductStockUpdated(product);
     }
 
     return { success: true, data: product };
@@ -160,10 +160,10 @@ export const updateStock = async (
     product.lastUpdated = new Date();
     await product.save();
 
-    emitProductUpdate(product);
+    emitProductStockUpdated(product);
 
     if (product.stockQuantity <= 5) {
-      emitLowStockAlert(product);
+      emitProductStockUpdated(product);
     }
 
     if (previousStock > 5 && product.stockQuantity <= 5) {
@@ -208,7 +208,7 @@ export const deleteProduct = async (
       return { success: false, error: 'Product not found' };
     }
 
-    emitProductUpdate(product);
+    emitProductStockUpdated(product);
     return { success: true, data: product };
   } catch (error) {
     return {

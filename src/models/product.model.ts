@@ -18,6 +18,7 @@ export interface IProduct {
   description: string;
   price: number;
   stockQuantity: number;
+  reservedQuantity: number;
   category: string;
   isActive: boolean;
   imageUrl?: string;
@@ -35,13 +36,15 @@ export interface ProductRequest extends Request {
     stockQuantity?: number;
     category?: string;
     imageUrl?: string;
-    data?: string; // check if needed
+    data?: string;
     [key: string]: any;
   };
   file?: Express.Multer.File;
 }
 
-export interface IProductDocument extends IProduct, Document {}
+export interface IProductDocument extends IProduct, Document {
+  availableQuantity: number; // Virtual field
+}
 
 const productSchema = new Schema<IProductDocument>(
   {
@@ -65,6 +68,12 @@ const productSchema = new Schema<IProductDocument>(
       min: [0, 'Stock quantity cannot be negative'],
       default: 0,
     },
+    reservedQuantity: {
+      type: Number,
+      min: [0, 'Reserved quantity cannot be negative'],
+      default: 0,
+      index: true, // Index for Performance
+    },
     category: {
       type: String,
       required: [true, 'Category is required'],
@@ -86,6 +95,15 @@ const productSchema = new Schema<IProductDocument>(
     timestamps: true,
   },
 );
+
+productSchema.virtual('availableQuantity').get(function (
+  this: IProductDocument,
+) {
+  return this.stockQuantity - this.reservedQuantity;
+});
+
+productSchema.set('toJSON', { virtuals: true });
+productSchema.set('toObject', { virtuals: true });
 
 export const Product = mongoose.model<IProductDocument>(
   'Product',

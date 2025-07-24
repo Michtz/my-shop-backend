@@ -45,9 +45,12 @@ router
   .post((req: CartRequest, res: Response) => createCart(req, res));
 
 router
-  .route('/:sessionId')
+  .route('/:sessionId/:userId')
   .get((req: CartRequest, res: Response) => getCart(req, res));
 
+router
+  .route('/:sessionId')
+  .get((req: CartRequest, res: Response) => getCart(req, res));
 router
   .route('/:sessionId')
   .put((req: CartRequest, res: Response) => addToCart(req, res));

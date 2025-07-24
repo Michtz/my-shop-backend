@@ -10,7 +10,7 @@ import {
 
 export interface CartResponse {
   success: boolean;
-  data?: ICart | null;
+  data?: ICartDocument | null;
   error?: string;
 }
 
@@ -28,6 +28,7 @@ export interface ICartItem {
   productId: string | Schema.Types.ObjectId;
   quantity: number;
   price: number;
+  reservedUntil?: Date; // NEU: Reservierung bis wann
   product?: IProductDocument;
 }
 
@@ -54,6 +55,8 @@ export interface ICart extends Document {
   createdAt: Date;
   calculateTotal: () => number;
 }
+
+export interface ICartDocument extends ICart, Document {}
 
 export interface CartRequest extends Request {
   params: {
@@ -99,6 +102,10 @@ const cartItemSchema = new Schema<ICartItem>({
     required: false,
     min: [0, 'Price cannot be negative'],
   },
+  reservedUntil: {
+    type: Date,
+    required: false,
+  },
 });
 
 const guestInfoSchema = new Schema<IGuestInfo>({
@@ -141,7 +148,7 @@ const userCartInfoSchema = new Schema<IUserCartInfo>({
   guestInfo: guestInfoSchema,
 });
 
-const cartSchema = new Schema<ICart>({
+const cartSchema = new Schema<ICartDocument>({
   sessionId: {
     type: String,
     required: true,
@@ -166,7 +173,7 @@ const cartSchema = new Schema<ICart>({
   },
 });
 
-cartSchema.methods.calculateTotal = function (this: ICart): number {
+cartSchema.methods.calculateTotal = function (this: ICartDocument): number {
   this.total = this.items.reduce((sum, item) => {
     return sum + item.price * item.quantity;
   }, 0);
@@ -185,8 +192,8 @@ cartSchema.set('toJSON', {
         if (item.productId && typeof item.productId !== 'string') {
           return {
             ...item,
-            product: item.productId, // Complete product
-            productId: item.productId._id, // Only ID
+            product: item.productId,
+            productId: item.productId._id,
           };
         }
         return item;
@@ -196,7 +203,7 @@ cartSchema.set('toJSON', {
   },
 });
 
-// Compound index for faster lookups
 cartSchema.index({ sessionId: 1, userId: 1 });
+cartSchema.index({ 'items.reservedUntil': 1 });
 
-export const Cart = model<ICart>('Cart', cartSchema);
+export const Cart = model<ICartDocument>('Cart', cartSchema);

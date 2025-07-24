@@ -4,7 +4,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
 import cookieParser from 'cookie-parser';
+import cron from 'node-cron';
 import { initializeSocketIO } from './services/socket.service';
+import { releaseExpiredReservations } from './services/reservation.service';
 
 dotenv.config();
 
@@ -51,19 +53,39 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/sessions', sessionRoutes);
+app.use('/api/payment', paymentRoutes);
 
+// Socket.io initialization
 initializeSocketIO(server);
+
+// Cron Job: All 5min expired reservations cleanup
+cron.schedule('*/5 * * * *', async () => {
+  console.log('Running reservation cleanup...');
+  try {
+    const result = await releaseExpiredReservations();
+    if (result.expiredReservations > 0) {
+      console.log(
+        `Cleanup completed: ${result.expiredReservations} reservations released`,
+      );
+    }
+    if (result.errors.length > 0) {
+      console.error('Cleanup errors:', result.errors);
+    }
+  } catch (error) {
+    console.error('Reservation cleanup failed:', error);
+  }
+});
+
+console.log('Reservation cleanup cron job started (every 5 minutes)');
 
 const PORT = process.env.PORT || 4200;
 
 mongoose
   .connect(process.env.MONGODB_URI || '')
   .then(() => {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server is running on: http://localhost:${PORT}`);
       console.log('MongoDB is connected');
     });
   })
   .catch((err: Error) => console.error('MongoDB error:', err));
-
-app.use('/api/payment', paymentRoutes);

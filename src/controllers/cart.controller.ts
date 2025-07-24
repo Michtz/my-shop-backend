@@ -199,6 +199,7 @@ export const replaceCartItems = async (
 ): Promise<void> => {
   try {
     const { sessionId } = req.params;
+    const { userId } = req.params;
     const { items } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -209,7 +210,6 @@ export const replaceCartItems = async (
       return;
     }
 
-    // Validate item structure
     const invalidItems = items.filter(
       (item) => !item.productId || !item.quantity || item.quantity < 1,
     );
@@ -225,6 +225,7 @@ export const replaceCartItems = async (
     const cart = await CartService.replaceCartItems(
       sessionId,
       items as cartItemsTest,
+      userId,
     );
 
     if (!cart.success) {

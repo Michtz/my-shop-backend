@@ -3,10 +3,25 @@ import {
   CartCreateData,
   CartResponse,
   IUserCartInfo,
+  ICartDocument,
 } from '../models/cart.model';
 import mongoose from 'mongoose';
 import { Product } from '../models/product.model';
 import { IUser, User } from '../models/user.model';
+import {
+  createCartItemReservation,
+  releaseCartItemReservation,
+} from './reservation.service';
+import {
+  emitCartItemReserved,
+  emitCartItemReleased,
+  emitCartUpdated,
+  emitStockConflict,
+  CartReservationData,
+  StockConflictData,
+} from './socket.service';
+
+const RESERVATION_DURATION = 20 * 60 * 1000; //  20min
 
 // works as intended
 export const createCart = async (
@@ -48,22 +63,30 @@ export const createCart = async (
 };
 
 // works as intended
-//Todo: add user id validation
+
 export const getCart = async (
   sessionId: string,
   userId?: string,
 ): Promise<CartResponse> => {
   try {
-    let cart = await Cart.findOne({
-      sessionId,
-    }).populate('items.productId');
+    let cart = await Cart.findOne({ sessionId }).populate('items.productId');
+
+    if (!cart && userId) {
+      cart = await Cart.findOne({ userId }).populate('items.productId');
+
+      if (cart) {
+        if (userId && !cart.userId) {
+          cart.userId = userId;
+          console.log('🔗 Adding userId to existing cart:', userId);
+        }
+
+        cart.sessionId = sessionId;
+        await cart.save();
+      }
+    }
 
     if (!cart) {
-      return {
-        success: false,
-        error: 'Cart not found',
-        data: null,
-      };
+      return { success: false, error: 'Cart not found', data: null };
     }
 
     return { success: true, data: cart };
@@ -75,7 +98,6 @@ export const getCart = async (
   }
 };
 
-// works as intended
 export const addToCart = async (
   sessionId: string,
   userId: string | undefined,
@@ -85,6 +107,7 @@ export const addToCart = async (
   try {
     let cart = await Cart.findOne({ sessionId });
     const product = await Product.findById(productId);
+
     if (!product) {
       return {
         success: false,
@@ -92,18 +115,54 @@ export const addToCart = async (
       };
     }
 
+    const availableQuantity = product.stockQuantity - product.reservedQuantity;
+    if (availableQuantity < quantity) {
+      const conflictData: StockConflictData = {
+        productId,
+        productName: product.name,
+        requestedQuantity: quantity,
+        availableStock: availableQuantity,
+        conflictType: 'insufficient_stock',
+      };
+      emitStockConflict(sessionId, userId, conflictData);
+
+      return {
+        success: false,
+        error: `Not enough stock available. Available: ${availableQuantity}, Requested: ${quantity}`,
+      };
+    }
+
+    const reservationResult = await createCartItemReservation(
+      productId,
+      quantity,
+    );
+    if (!reservationResult.success) {
+      return {
+        success: false,
+        error: reservationResult.error,
+      };
+    }
+
+    const reservedUntil = new Date(Date.now() + RESERVATION_DURATION);
+
     if (cart) {
+      if (userId && !cart.userId) {
+        cart.userId = userId;
+      }
+
       const existingItemIndex = cart.items.findIndex(
         (item) => item.productId.toString() === productId,
       );
 
       if (existingItemIndex > -1) {
         cart.items[existingItemIndex].quantity += quantity;
+        cart.items[existingItemIndex].reservedUntil = reservedUntil;
       } else {
         cart.items.push({
           productId,
           quantity,
           price: product.price,
+          reservedUntil,
         });
       }
 
@@ -118,6 +177,7 @@ export const addToCart = async (
             productId,
             quantity,
             price: product.price,
+            reservedUntil,
           },
         ],
       });
@@ -125,7 +185,23 @@ export const addToCart = async (
       await cart.save();
     }
 
+    // Socket Events
+    const cartCount = await getProductCartCount(productId);
+    const reservationData: CartReservationData = {
+      productId,
+      productName: product.name,
+      reservedQuantity: quantity,
+      availableStock: product.stockQuantity - product.reservedQuantity,
+      cartCount,
+      sessionId,
+      userId,
+    };
+
+    emitCartItemReserved(reservationData);
+
     const populatedCart = await cart.populate('items.productId');
+    emitCartUpdated(populatedCart);
+
     return {
       success: true,
       data: populatedCart,
@@ -139,7 +215,6 @@ export const addToCart = async (
   }
 };
 
-// works as intended
 export const removeFromCart = async (
   sessionId: string,
   productId: string,
@@ -154,12 +229,42 @@ export const removeFromCart = async (
       return { success: false, error: 'Cart not found' };
     }
 
+    const itemToRemove = cart.items.find(
+      (item) => item.productId.toString() === productId,
+    );
+
+    if (itemToRemove) {
+      await releaseCartItemReservation(
+        sessionId,
+        productId,
+        itemToRemove.quantity,
+      );
+
+      const product = await Product.findById(productId);
+      if (product) {
+        const cartCount = (await getProductCartCount(productId)) - 1;
+        const releaseData: CartReservationData = {
+          productId,
+          productName: product.name,
+          reservedQuantity: itemToRemove.quantity,
+          availableStock: product.stockQuantity - product.reservedQuantity,
+          cartCount,
+          sessionId,
+          userId: cart.userId,
+        };
+
+        emitCartItemReleased(releaseData);
+      }
+    }
+
     cart.items = cart.items.filter(
       (item) => item.productId.toString() !== productId,
     );
 
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
+
+    emitCartUpdated(populatedCart);
 
     return { success: true, data: populatedCart };
   } catch (error) {
@@ -170,7 +275,6 @@ export const removeFromCart = async (
   }
 };
 
-// works as intended
 export const updateCartItem = async (
   sessionId: string,
   productId: string,
@@ -198,16 +302,55 @@ export const updateCartItem = async (
       return { success: false, error: 'Product not found' };
     }
 
-    if (product.stockQuantity < quantity) {
-      return { success: false, error: 'Not enough stock available' };
+    const oldQuantity = item.quantity;
+    const quantityDiff = quantity - oldQuantity;
+
+    if (quantityDiff > 0) {
+      const availableQuantity =
+        product.stockQuantity - product.reservedQuantity;
+      if (availableQuantity < quantityDiff) {
+        const conflictData: StockConflictData = {
+          productId,
+          productName: product.name,
+          requestedQuantity: quantity,
+          availableStock: availableQuantity + oldQuantity,
+          conflictType: 'insufficient_stock',
+        };
+        emitStockConflict(sessionId, cart.userId, conflictData);
+
+        return {
+          success: false,
+          error: `Not enough stock available. Available: ${availableQuantity + oldQuantity}, Requested: ${quantity}`,
+        };
+      }
+
+      const reservationResult = await createCartItemReservation(
+        productId,
+        quantityDiff,
+      );
+      if (!reservationResult.success) {
+        return {
+          success: false,
+          error: reservationResult.error,
+        };
+      }
+    } else if (quantityDiff < 0) {
+      await releaseCartItemReservation(
+        sessionId,
+        productId,
+        Math.abs(quantityDiff),
+      );
     }
 
     item.quantity = quantity;
     item.price = product.price;
+    item.reservedUntil = new Date(Date.now() + RESERVATION_DURATION); // Timer reset
     cart.calculateTotal?.();
 
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
+
+    emitCartUpdated(populatedCart);
 
     return { success: true, data: populatedCart };
   } catch (error) {
@@ -223,19 +366,25 @@ export type cartItemsTest = Array<{ productId: string; quantity: number }>;
 export const replaceCartItems = async (
   sessionId: string,
   items: cartItemsTest,
+  userId?: string,
 ): Promise<CartResponse> => {
   try {
-    // Find or create cart
     let cart = await Cart.findOne({ sessionId });
     if (!cart) {
-      cart = new Cart({ sessionId, items: [] });
+      cart = new Cart({ sessionId, userId, items: [] });
     }
 
-    // Validate all products first
+    for (const oldItem of cart.items) {
+      await releaseCartItemReservation(
+        sessionId,
+        oldItem.productId.toString(),
+        oldItem.quantity,
+      );
+    }
+
     const validatedItems = [];
 
     for (const item of items) {
-      // Validate ObjectId
       if (!mongoose.Types.ObjectId.isValid(item.productId)) {
         return {
           success: false,
@@ -243,7 +392,6 @@ export const replaceCartItems = async (
         };
       }
 
-      // Check if product exists
       const product = await Product.findById(item.productId);
       if (!product) {
         return {
@@ -252,7 +400,6 @@ export const replaceCartItems = async (
         };
       }
 
-      // Check if product is active
       if (!product.isActive) {
         return {
           success: false,
@@ -260,28 +407,32 @@ export const replaceCartItems = async (
         };
       }
 
-      // Check stock
-      if (product.stockQuantity < item.quantity) {
+      const reservationResult = await createCartItemReservation(
+        item.productId,
+        item.quantity,
+      );
+      if (!reservationResult.success) {
         return {
           success: false,
-          error: `Not enough stock for ${product.name}. Available: ${product.stockQuantity}, Requested: ${item.quantity}`,
+          error: `${product.name}: ${reservationResult.error}`,
         };
       }
 
-      // Add validated item
       validatedItems.push({
         productId: item.productId,
         quantity: item.quantity,
         price: product.price,
+        reservedUntil: new Date(Date.now() + RESERVATION_DURATION),
       });
     }
 
-    // If all validations pass, replace items
     cart.items = validatedItems;
     cart.calculateTotal();
 
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
+
+    emitCartUpdated(populatedCart);
 
     return { success: true, data: populatedCart };
   } catch (error) {
@@ -494,5 +645,17 @@ export const updateCart = async (
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
+  }
+};
+
+const getProductCartCount = async (productId: string): Promise<number> => {
+  try {
+    const count = await Cart.countDocuments({
+      'items.productId': productId,
+    });
+    return count;
+  } catch (error) {
+    console.error('Error getting product cart count:', error);
+    return 0;
   }
 };
