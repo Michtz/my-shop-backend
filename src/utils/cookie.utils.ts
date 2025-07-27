@@ -26,7 +26,7 @@ export const clearSessionCookie = (res: Response): void => {
   res.clearCookie('sessionId', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
   });
 };
@@ -35,7 +35,7 @@ export const clearAuthTokenCookie = (res: Response): void => {
   res.clearCookie('authToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
   });
 };
