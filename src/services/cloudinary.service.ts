@@ -4,9 +4,9 @@ import path from 'path';
 
 // Cloudinary Konfiguration
 cloudinary.config({
-  cloud_name: 'de2rhuwpw',
-  api_key: '948596732986297',
-  api_secret: 'G5UP7y2NxG9a1KWXScClOTa9uVk',
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 export interface CloudinaryResponse {
