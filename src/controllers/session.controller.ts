@@ -64,9 +64,61 @@ export const getAllSessions = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const result = await SessionService.getAllSessions();
-    res.status(200).json(result);
+    console.log('[SESSION] Getting all sessions...');
+    console.log('[SESSION] Available cookies:', Object.keys(req.cookies || {}));
+    const sessionId = req.cookies?.sessionId;
+
+    if (!sessionId) {
+      console.log('[SESSION] No sessionId cookie found, creating new session...');
+      const createResult = await SessionService.createSession({});
+      
+      if (createResult.success) {
+        console.log('[SESSION] New session created:', createResult.data.sessionId);
+        setSessionCookie(res, createResult.data.sessionId);
+        res.status(200).json({
+          success: true,
+          data: [createResult.data],
+        });
+      } else {
+        console.error('[SESSION] Failed to create session:', createResult.error);
+        res.status(500).json({
+          success: false,
+          error: 'Failed to create session',
+        });
+      }
+      return;
+    }
+
+    console.log('[SESSION] Found sessionId:', sessionId);
+    const sessionResult = await SessionService.getSession(sessionId);
+    
+    if (sessionResult.success) {
+      console.log('[SESSION] Existing session found');
+      res.status(200).json({
+        success: true,
+        data: [sessionResult.data],
+      });
+    } else {
+      console.log('[SESSION] Session not found, creating new session...');
+      const createResult = await SessionService.createSession({});
+      
+      if (createResult.success) {
+        console.log('[SESSION] New session created:', createResult.data.sessionId);
+        setSessionCookie(res, createResult.data.sessionId);
+        res.status(200).json({
+          success: true,
+          data: [createResult.data],
+        });
+      } else {
+        console.error('[SESSION] Failed to create session:', createResult.error);
+        res.status(500).json({
+          success: false,
+          error: 'Failed to create session',
+        });
+      }
+    }
   } catch (error) {
+    console.error('[SESSION] Server error while fetching sessions:', error);
     res.status(500).json({
       success: false,
       error: 'Server error while fetching sessions',
