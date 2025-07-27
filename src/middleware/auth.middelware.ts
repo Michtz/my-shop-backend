@@ -10,7 +10,7 @@ export const authenticate = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    const headerToken = authHeader && authHeader.split(' ')[1];
+    const headerToken = authHeader && typeof authHeader === 'string' && authHeader.split(' ')[1];
     const cookieToken = req.cookies?.authToken;
 
     const token = headerToken || cookieToken;

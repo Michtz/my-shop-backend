@@ -11,9 +11,26 @@ declare global {
       cookies: {
         [key: string]: string;
       };
+      headers: {
+        [key: string]: string | string[] | undefined;
+      };
+    }
+    
+    namespace Multer {
+      interface File {
+        fieldname: string;
+        originalname: string;
+        encoding: string;
+        mimetype: string;
+        buffer: Buffer;
+        size: number;
+        filename: string;
+        path: string;
+      }
     }
   }
 }
+
 export interface AuthRequest extends Request {
   body: {
     email?: string;
@@ -32,6 +49,12 @@ export interface AuthRequest extends Request {
     role?: string;
   };
   sessionId?: string;
+  cookies: {
+    [key: string]: string;
+  };
+  headers: {
+    [key: string]: string | string[] | undefined;
+  };
 }
 
 export interface UserPayload {

@@ -157,7 +157,7 @@ export const logout = async (
     // Token aus Cookie oder Authorization Header holen
     const authToken =
       req.cookies?.authToken ||
-      (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+      (req.headers.authorization && typeof req.headers.authorization === 'string' && req.headers.authorization.split(' ')[1]);
 
     // SessionId aus Cookie holen
     const sessionId = req.cookies?.sessionId;
@@ -200,7 +200,7 @@ export const getCurrentUser = async (
     // Token aus Cookie oder Authorization Header holen
     const authToken =
       req.cookies?.authToken ||
-      (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+      (req.headers.authorization && typeof req.headers.authorization === 'string' && req.headers.authorization.split(' ')[1]);
 
     if (!authToken) {
       res.status(401).json({
@@ -328,7 +328,7 @@ export const validateToken = async (
     // Token aus Cookie oder Authorization Header holen
     const authToken =
       req.cookies?.authToken ||
-      (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+      (req.headers.authorization && typeof req.headers.authorization === 'string' && req.headers.authorization.split(' ')[1]);
 
     if (!authToken) {
       res.status(401).json({
