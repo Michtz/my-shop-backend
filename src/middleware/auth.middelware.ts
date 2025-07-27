@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { verifyToken, isTokenBlacklisted } from '../utils/jwt.utils';
-import { AuthRequest } from '../models/auth.model';
+import { AuthRequest } from '../types';
 import { clearAllAuthCookies } from '../utils/cookie.utils';
 
 export const authenticate = async (
@@ -69,7 +69,7 @@ export const authorize = (roles: string[]) => {
       return;
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!req.user.role || !roles.includes(req.user.role)) {
       res.status(403).json({
         success: false,
         error: 'Insufficient permissions',

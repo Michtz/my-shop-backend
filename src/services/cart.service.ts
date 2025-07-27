@@ -382,7 +382,7 @@ export const replaceCartItems = async (
       );
     }
 
-    const validatedItems = [];
+    const validatedItems: any[] = [];
 
     for (const item of items) {
       if (!mongoose.Types.ObjectId.isValid(item.productId)) {

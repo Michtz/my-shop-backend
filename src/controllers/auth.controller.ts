@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import * as AuthService from '../services/auth.service';
-import { AuthRequest } from '../models/auth.model';
+import { AuthRequest } from '../types';
 import { verifyToken } from '../utils/jwt.utils';
 import {
   setSessionCookie,

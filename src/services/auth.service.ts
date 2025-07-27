@@ -1,4 +1,4 @@
-import { AuthRequest, AuthResponse } from '../models/auth.model';
+import { AuthResponse } from '../models/auth.model';
 import { UpdateUserData, User } from '../models/user.model';
 import {
   generateToken,

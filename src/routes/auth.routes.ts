@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { AuthRequest } from '../models/auth.model';
+import { AuthRequest } from '../types';
 
 import {
   register,

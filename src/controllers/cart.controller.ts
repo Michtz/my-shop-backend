@@ -74,7 +74,7 @@ export const addToCart = async (
       return;
     }
 
-    const results = [];
+    const results: any[] = [];
     for (const item of req.body.items) {
       const { productId, quantity } = item;
 
@@ -128,7 +128,7 @@ export const removeFromCart = async (
       return;
     }
 
-    const results = [];
+    const results: any[] = [];
     for (const item of req.body.items) {
       const { productId } = item;
 

@@ -42,7 +42,7 @@ export const confirmPayment = async (req: Request, res: Response) => {
     }
 
     // Get payment method details from Stripe
-    let paymentMethodDetails = null;
+    let paymentMethodDetails: { last4: string; brand: string; paymentMethodId: string } | null = null;
     if (paymentMethodId) {
       try {
         const paymentMethod =

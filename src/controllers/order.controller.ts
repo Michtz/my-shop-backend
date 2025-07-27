@@ -23,7 +23,7 @@ export const createOrder = async (
       return;
     }
 
-    let paymentMethodDetails = null;
+    let paymentMethodDetails: { last4: string; brand: string; paymentMethodId: string } | null = null;
     if (paymentMethodId) {
       try {
         const paymentMethod =
