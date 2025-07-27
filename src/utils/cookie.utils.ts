@@ -6,7 +6,7 @@ export const setSessionCookie = (res: Response, sessionId: string): void => {
   res.cookie('sessionId', sessionId, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: SESSION_DURATION,
     path: '/',
   });
@@ -16,7 +16,7 @@ export const setAuthTokenCookie = (res: Response, token: string): void => {
   res.cookie('authToken', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: SESSION_DURATION,
     path: '/',
   });
