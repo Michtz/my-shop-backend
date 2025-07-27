@@ -15,6 +15,7 @@ import sessionRoutes from './routes/session.routes';
 import orderRoutes from './routes/order.routes';
 import cartRoutes from './routes/cart.routes';
 import productRoutes from './routes/product.routes';
+import blogRoutes from './routes/blog.routes';
 import connectDB from './config/db';
 import authRoutes from './routes/auth.routes';
 
@@ -44,6 +45,7 @@ app.get('/', (req: Request, res: Response) => {
     endpoints: {
       test: '/test',
       products: '/api/products',
+      blog: '/api/blog',
     },
   });
 });
@@ -54,6 +56,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/order', orderRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/blog', blogRoutes);
 
 // Socket.io initialization
 initializeSocketIO(server);
