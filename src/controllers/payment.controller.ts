@@ -74,7 +74,9 @@ export const confirmPayment = async (req: Request, res: Response) => {
       return;
     }
 
-    const orderNumber = orderResult.data?.orderNumber;
+    // orderResult.data is a single IOrder in this context (not an array)
+    const order = orderResult.data as any; // Type assertion since we know it's a single order
+    const orderNumber = order?.orderNumber;
     
     console.log('Payment confirmed and order created:', {
       sessionId,
