@@ -74,17 +74,20 @@ export const confirmPayment = async (req: Request, res: Response) => {
       return;
     }
 
+    const orderNumber = orderResult.data?.orderNumber;
+    
     console.log('Payment confirmed and order created:', {
       sessionId,
       paymentIntentId,
-      orderNumber: orderResult?.orderNumber,
+      orderNumber,
+      hasOrderData: !!orderResult.data,
     });
 
     res.status(200).json({
       success: true,
       data: {
         paymentConfirmed: true,
-        orderNumber: orderResult?.orderNumber,
+        orderNumber: orderNumber,
         order: orderResult.data,
       },
     });
