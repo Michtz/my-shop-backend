@@ -3,22 +3,20 @@ import { Response } from 'express';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24h
 
 export const setSessionCookie = (res: Response, sessionId: string): void => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isLocalhost = process.env.NODE_ENV === 'production';
+
+  console.log('[DEBUG] Origin:', origin);
+  console.log('[DEBUG] isLocalhost:', isLocalhost);
+
   const cookieOptions = {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'none' as const,
+    secure: !isLocalhost, // Sollte FALSE sein für localhost!
+    sameSite: isLocalhost ? ('lax' as const) : ('none' as const),
     maxAge: SESSION_DURATION,
     path: '/',
   };
 
-  console.log('[COOKIE] Setting session cookie with options:', {
-    sessionId,
-    ...cookieOptions,
-    nodeEnv: process.env.NODE_ENV,
-    isProduction,
-  });
-
+  console.log('[DEBUG] Cookie options:', cookieOptions);
   res.cookie('sessionId', sessionId, cookieOptions);
 };
 
