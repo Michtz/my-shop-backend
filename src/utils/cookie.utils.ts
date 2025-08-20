@@ -1,13 +1,13 @@
 import { Response } from 'express';
 
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 Stunden
+const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24h
 
 export const setSessionCookie = (res: Response, sessionId: string): void => {
   const isProduction = process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax' as const, // Always 'none' for cross-origin support
+    sameSite: 'lax' as const,
     maxAge: SESSION_DURATION,
     path: '/',
   };
@@ -26,7 +26,7 @@ export const setAuthTokenCookie = (res: Response, token: string): void => {
   res.cookie('authToken', token, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'none' as const, // Always 'none' for cross-origin support
+    sameSite: 'lax' as const,
     maxAge: SESSION_DURATION,
     path: '/',
   });
@@ -37,7 +37,7 @@ export const clearSessionCookie = (res: Response): void => {
   res.clearCookie('sessionId', {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'none' as const, // Always 'none' for cross-origin support
+    sameSite: 'lax' as const,
     path: '/',
   });
 };
@@ -47,7 +47,7 @@ export const clearAuthTokenCookie = (res: Response): void => {
   res.clearCookie('authToken', {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'none' as const, // Always 'none' for cross-origin support
+    sameSite: 'lax' as const,
     path: '/',
   });
 };
