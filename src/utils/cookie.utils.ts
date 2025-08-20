@@ -3,7 +3,7 @@ import { Response } from 'express';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24h
 
 export const setSessionCookie = (res: Response, sessionId: string): void => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = true; //process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
