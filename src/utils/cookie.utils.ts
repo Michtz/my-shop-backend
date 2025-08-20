@@ -3,11 +3,11 @@ import { Response } from 'express';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24h
 
 export const setSessionCookie = (res: Response, sessionId: string): void => {
-  const isProduction = true; //process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax' as const,
+    sameSite: 'none' as const,
     maxAge: SESSION_DURATION,
     path: '/',
   };
@@ -16,6 +16,7 @@ export const setSessionCookie = (res: Response, sessionId: string): void => {
     sessionId,
     ...cookieOptions,
     nodeEnv: process.env.NODE_ENV,
+    isProduction,
   });
 
   res.cookie('sessionId', sessionId, cookieOptions);
@@ -26,7 +27,7 @@ export const setAuthTokenCookie = (res: Response, token: string): void => {
   res.cookie('authToken', token, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax' as const,
+    sameSite: 'none' as const,
     maxAge: SESSION_DURATION,
     path: '/',
   });
