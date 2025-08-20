@@ -10,11 +10,17 @@ export const createSession = async (
   try {
     console.log('[SESSION] Creating new session...');
     const result = await SessionService.createSession(req.body.data);
-    
+
     if (result.success) {
-      console.log('[SESSION] Session created successfully:', result.data.sessionId);
+      console.log(
+        '[SESSION] Session created successfully:',
+        result.data.sessionId,
+      );
       setSessionCookie(res, result.data.sessionId);
-      console.log('[SESSION] Cookie set with sessionId:', result.data.sessionId);
+      console.log(
+        '[SESSION] Cookie set with sessionId:',
+        result.data.sessionId,
+      );
     } else {
       console.error('[SESSION] Failed to create session:', result.error);
     }
@@ -45,6 +51,7 @@ export const getSession = async (
     }
 
     const result = await SessionService.getSession(sessionId);
+    setSessionCookie(res, result.data.sessionId);
     const status = result.success
       ? 200
       : result.error === 'Session not found'
@@ -69,18 +76,26 @@ export const getAllSessions = async (
     const sessionId = req.cookies?.sessionId;
 
     if (!sessionId) {
-      console.log('[SESSION] No sessionId cookie found, creating new session...');
+      console.log(
+        '[SESSION] No sessionId cookie found, creating new session...',
+      );
       const createResult = await SessionService.createSession({});
-      
+
       if (createResult.success) {
-        console.log('[SESSION] New session created:', createResult.data.sessionId);
+        console.log(
+          '[SESSION] New session created:',
+          createResult.data.sessionId,
+        );
         setSessionCookie(res, createResult.data.sessionId);
         res.status(200).json({
           success: true,
           data: [createResult.data],
         });
       } else {
-        console.error('[SESSION] Failed to create session:', createResult.error);
+        console.error(
+          '[SESSION] Failed to create session:',
+          createResult.error,
+        );
         res.status(500).json({
           success: false,
           error: 'Failed to create session',
@@ -91,7 +106,7 @@ export const getAllSessions = async (
 
     console.log('[SESSION] Found sessionId:', sessionId);
     const sessionResult = await SessionService.getSession(sessionId);
-    
+
     if (sessionResult.success) {
       console.log('[SESSION] Existing session found');
       res.status(200).json({
@@ -101,16 +116,22 @@ export const getAllSessions = async (
     } else {
       console.log('[SESSION] Session not found, creating new session...');
       const createResult = await SessionService.createSession({});
-      
+
       if (createResult.success) {
-        console.log('[SESSION] New session created:', createResult.data.sessionId);
+        console.log(
+          '[SESSION] New session created:',
+          createResult.data.sessionId,
+        );
         setSessionCookie(res, createResult.data.sessionId);
         res.status(200).json({
           success: true,
           data: [createResult.data],
         });
       } else {
-        console.error('[SESSION] Failed to create session:', createResult.error);
+        console.error(
+          '[SESSION] Failed to create session:',
+          createResult.error,
+        );
         res.status(500).json({
           success: false,
           error: 'Failed to create session',
@@ -141,6 +162,7 @@ export const updateSession = async (
     }
 
     const result = await SessionService.updateSession(sessionId, req.body);
+    setSessionCookie(res, result.data.sessionId);
     const status = result.success
       ? 200
       : result.error === 'Session not found'
@@ -235,7 +257,7 @@ export const getCurrentSession = async (
 
     console.log('[SESSION] Found sessionId:', sessionId);
     const result = await SessionService.getSession(sessionId);
-    
+
     if (result.success) {
       console.log('[SESSION] Session found successfully');
     } else {
@@ -249,7 +271,10 @@ export const getCurrentSession = async (
         : 500;
     res.status(status).json(result);
   } catch (error) {
-    console.error('[SESSION] Server error while fetching current session:', error);
+    console.error(
+      '[SESSION] Server error while fetching current session:',
+      error,
+    );
     res.status(500).json({
       success: false,
       error: 'Server error while fetching current session',

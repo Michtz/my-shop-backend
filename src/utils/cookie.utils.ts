@@ -10,7 +10,7 @@ export const setSessionCookie = (res: Response, sessionId: string): void => {
 
   const cookieOptions = {
     httpOnly: true,
-    secure: !isLocalhost, // Sollte FALSE sein für localhost!
+    secure: !isLocalhost,
     sameSite: isLocalhost ? ('lax' as const) : ('none' as const),
     maxAge: SESSION_DURATION,
     path: '/',
