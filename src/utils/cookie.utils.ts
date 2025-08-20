@@ -7,7 +7,7 @@ export const setSessionCookie = (res: Response, sessionId: string): void => {
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax' as const,
+    sameSite: 'none' as const,
     maxAge: SESSION_DURATION,
     path: '/',
   };
@@ -26,7 +26,7 @@ export const setAuthTokenCookie = (res: Response, token: string): void => {
   res.cookie('authToken', token, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax' as const,
+    sameSite: 'none' as const,
     maxAge: SESSION_DURATION,
     path: '/',
   });
@@ -37,7 +37,7 @@ export const clearSessionCookie = (res: Response): void => {
   res.clearCookie('sessionId', {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax' as const,
+    sameSite: 'none' as const,
     path: '/',
   });
 };
@@ -47,7 +47,7 @@ export const clearAuthTokenCookie = (res: Response): void => {
   res.clearCookie('authToken', {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax' as const,
+    sameSite: 'none' as const,
     path: '/',
   });
 };
