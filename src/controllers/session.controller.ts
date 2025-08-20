@@ -12,11 +12,9 @@ export const createSession = async (
     const result = await SessionService.createSession(req.body.data);
 
     if (result.success) {
-      console.log(
-        '[SESSION] Session created successfully:',
-        result.data.sessionId,
-      );
-      setSessionCookie(res, result.data.sessionId);
+      if (result.success) {
+        setSessionCookie(res, result.data.sessionId, req);
+      }
       console.log(
         '[SESSION] Cookie set with sessionId:',
         result.data.sessionId,

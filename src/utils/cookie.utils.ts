@@ -1,12 +1,16 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24h
 
-export const setSessionCookie = (res: Response, sessionId: string): void => {
-  const isLocalhost = process.env.NODE_ENV === 'production';
+export const setSessionCookie = (
+  res: Response,
+  sessionId: string,
+  req?: Request,
+): void => {
+  const origin = req?.get('Origin') || '';
+  const isLocalhost = origin.includes('localhost');
 
-  console.log('[DEBUG] Origin:', origin);
-  console.log('[DEBUG] isLocalhost:', isLocalhost);
+  console.log('[DEBUG] Origin:', origin, 'isLocalhost:', isLocalhost);
 
   const cookieOptions = {
     httpOnly: true,
@@ -16,7 +20,6 @@ export const setSessionCookie = (res: Response, sessionId: string): void => {
     path: '/',
   };
 
-  console.log('[DEBUG] Cookie options:', cookieOptions);
   res.cookie('sessionId', sessionId, cookieOptions);
 };
 
