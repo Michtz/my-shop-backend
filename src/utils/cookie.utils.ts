@@ -55,6 +55,6 @@ export const clearAuthTokenCookie = (res: Response): void => {
 };
 
 export const clearAllAuthCookies = (res: Response): void => {
-  clearSessionCookie(res);
+  // clearSessionCookie(res);
   clearAuthTokenCookie(res);
 };
