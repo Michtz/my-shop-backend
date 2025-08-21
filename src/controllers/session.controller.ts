@@ -248,7 +248,7 @@ export const getCurrentSession = async (
       console.log('[SESSION] No sessionId cookie found');
       res.status(200).json({
         success: false,
-        error: 'No session cookie found',
+        error: 'No session cookie found' + req.cookies,
       });
       return;
     }
