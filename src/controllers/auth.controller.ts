@@ -47,7 +47,7 @@ export const register = async (
 
     // Auth Token Cookie setzen
     if (result.token) {
-      setAuthTokenCookie(res, result.token, req);
+      setAuthTokenCookie(res, result.token);
     }
 
     res.status(201).json({
@@ -93,7 +93,7 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
 
     // Auth Token Cookie setzen
     if (result.data.token) {
-      setAuthTokenCookie(res, result.data.token, req);
+      setAuthTokenCookie(res, result.data.token);
     }
 
     res.status(200).json({
@@ -133,7 +133,7 @@ export const refreshToken = async (
 
     // Neuen Token als Cookie setzen
     if (result.token) {
-      setAuthTokenCookie(res, result.token, req);
+      setAuthTokenCookie(res, result.token);
     }
 
     res.status(200).json({

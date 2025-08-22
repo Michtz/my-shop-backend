@@ -14,7 +14,7 @@ export const setSessionCookie = (
 
   const cookieOptions = {
     httpOnly: true,
-    secure: isLocalhost,
+    secure: true,
     sameSite: 'none' as const,
     maxAge: SESSION_DURATION,
     path: '/',
@@ -23,16 +23,10 @@ export const setSessionCookie = (
   res.cookie('sessionId', sessionId, cookieOptions);
 };
 
-export const setAuthTokenCookie = (
-  res: Response,
-  token: string,
-  req?: Request,
-): void => {
-  const origin = req?.get('Origin') || '';
-  const isLocalhost = origin.includes('localhost');
+export const setAuthTokenCookie = (res: Response, token: string): void => {
   res.cookie('authToken', token, {
     httpOnly: true,
-    secure: isLocalhost,
+    secure: true,
     sameSite: 'none' as const,
     maxAge: SESSION_DURATION,
     path: '/',
