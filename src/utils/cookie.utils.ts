@@ -14,7 +14,7 @@ export const setSessionCookie = (
 
   const cookieOptions = {
     httpOnly: true,
-    secure: !isLocalhost,
+    secure: isLocalhost,
     sameSite: 'none' as const,
     maxAge: SESSION_DURATION,
     path: '/',
