@@ -144,7 +144,6 @@ export const getAllSessions = async (
     });
   }
 };
-
 export const updateSession = async (
   req: SessionRequest,
   res: Response,
@@ -159,15 +158,51 @@ export const updateSession = async (
       return;
     }
 
-    const result = await SessionService.updateSession(sessionId, req.body);
+    const currentSession = await SessionService.getSession(sessionId);
+    if (!currentSession.success) {
+      res.status(404).json({
+        success: false,
+        error: 'Session not found',
+      });
+      return;
+    }
+
+    const currentData = currentSession.data.data || {};
+    const currentPreferences = currentData.preferences || {};
+
+    const updatedPreferences = {
+      ...currentPreferences,
+      ...req.body.data.preferences,
+    };
+
+    if (req.body.data.language) {
+      updatedPreferences.language = req.body.data.language;
+    }
+    if (req.body.data.theme) {
+      updatedPreferences.theme = req.body.data.theme;
+    }
+
+    const updateData = {
+      data: {
+        ...currentData,
+        preferences: updatedPreferences,
+        lastActivity: new Date(),
+      },
+    };
+
+    const result = await SessionService.updateSession(sessionId, updateData);
+
     setSessionCookie(res, result.data.sessionId);
+
     const status = result.success
       ? 200
       : result.error === 'Session not found'
         ? 404
         : 500;
+
     res.status(status).json(result);
   } catch (error) {
+    console.error('Error updating session:', error);
     res.status(500).json({
       success: false,
       error: 'Server error while updating session',

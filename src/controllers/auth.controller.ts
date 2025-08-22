@@ -47,7 +47,7 @@ export const register = async (
 
     // Auth Token Cookie setzen
     if (result.token) {
-      setAuthTokenCookie(res, result.token);
+      setAuthTokenCookie(res, result.token, req);
     }
 
     res.status(201).json({
@@ -80,25 +80,24 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
     }
 
     const result = await AuthService.login(email, password, sessionId);
-
+    console.log('result of authservice 1111', result);
     if (!result.success) {
       res.status(401).json(result);
       return;
     }
 
-    // Session Cookie setzen
-    if (result.sessionId) {
-      setSessionCookie(res, result.sessionId);
-    }
+    // // Session Cookie setzen
+    // if (result.sessionId) {
+    //   setSessionCookie(res, result.sessionId);
+    // }
 
     // Auth Token Cookie setzen
-    if (result.token) {
-      setAuthTokenCookie(res, result.token);
+    if (result.data.token) {
+      setAuthTokenCookie(res, result.data.token, req);
     }
 
     res.status(200).json({
       ...result,
-      // Token und SessionId aus Response entfernen (sind jetzt in Cookies)
       token: undefined,
       sessionId: undefined,
     });
@@ -134,7 +133,7 @@ export const refreshToken = async (
 
     // Neuen Token als Cookie setzen
     if (result.token) {
-      setAuthTokenCookie(res, result.token);
+      setAuthTokenCookie(res, result.token, req);
     }
 
     res.status(200).json({
@@ -157,7 +156,9 @@ export const logout = async (
     // Token aus Cookie oder Authorization Header holen
     const authToken =
       req.cookies?.authToken ||
-      (req.headers.authorization && typeof req.headers.authorization === 'string' && req.headers.authorization.split(' ')[1]);
+      (req.headers.authorization &&
+        typeof req.headers.authorization === 'string' &&
+        req.headers.authorization.split(' ')[1]);
 
     // SessionId aus Cookie holen
     const sessionId = req.cookies?.sessionId;
@@ -200,7 +201,9 @@ export const getCurrentUser = async (
     // Token aus Cookie oder Authorization Header holen
     const authToken =
       req.cookies?.authToken ||
-      (req.headers.authorization && typeof req.headers.authorization === 'string' && req.headers.authorization.split(' ')[1]);
+      (req.headers.authorization &&
+        typeof req.headers.authorization === 'string' &&
+        req.headers.authorization.split(' ')[1]);
 
     if (!authToken) {
       res.status(401).json({
@@ -328,7 +331,9 @@ export const validateToken = async (
     // Token aus Cookie oder Authorization Header holen
     const authToken =
       req.cookies?.authToken ||
-      (req.headers.authorization && typeof req.headers.authorization === 'string' && req.headers.authorization.split(' ')[1]);
+      (req.headers.authorization &&
+        typeof req.headers.authorization === 'string' &&
+        req.headers.authorization.split(' ')[1]);
 
     if (!authToken) {
       res.status(401).json({

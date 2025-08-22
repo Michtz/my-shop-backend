@@ -23,11 +23,16 @@ export const setSessionCookie = (
   res.cookie('sessionId', sessionId, cookieOptions);
 };
 
-export const setAuthTokenCookie = (res: Response, token: string): void => {
-  const isProduction = process.env.NODE_ENV === 'production';
+export const setAuthTokenCookie = (
+  res: Response,
+  token: string,
+  req?: Request,
+): void => {
+  const origin = req?.get('Origin') || '';
+  const isLocalhost = origin.includes('localhost');
   res.cookie('authToken', token, {
     httpOnly: true,
-    secure: isProduction,
+    secure: isLocalhost,
     sameSite: 'none' as const,
     maxAge: SESSION_DURATION,
     path: '/',
