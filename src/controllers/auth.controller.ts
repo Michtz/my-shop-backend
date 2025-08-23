@@ -132,8 +132,8 @@ export const refreshToken = async (
     }
 
     // Neuen Token als Cookie setzen
-    if (result.token) {
-      setAuthTokenCookie(res, result.token);
+    if (result.data.token) {
+      setAuthTokenCookie(res, result.data.token);
     }
 
     res.status(200).json({
