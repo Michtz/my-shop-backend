@@ -3,7 +3,7 @@ import * as AuthService from '../services/auth.service';
 import { AuthRequest } from '../types';
 import { verifyToken } from '../utils/jwt.utils';
 import {
-  setSessionCookie,
+  // setSessionCookie,
   setAuthTokenCookie,
   clearAllAuthCookies,
 } from '../utils/cookie.utils';
@@ -39,15 +39,15 @@ export const register = async (
       res.status(400).json(result);
       return;
     }
-
-    // Session Cookie setzen, falls neue Session erstellt wurde
-    if (result.sessionId) {
-      setSessionCookie(res, result.sessionId);
-    }
+    //
+    // // Session Cookie setzen, falls neue Session erstellt wurde
+    // if (result.data.sessionId) {
+    //   setSessionCookie(res, result.sessionId);
+    // }
 
     // Auth Token Cookie setzen
-    if (result.token) {
-      setAuthTokenCookie(res, result.token);
+    if (result.data.token) {
+      setAuthTokenCookie(res, result.data.token);
     }
 
     res.status(201).json({
