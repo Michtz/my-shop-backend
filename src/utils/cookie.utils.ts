@@ -33,9 +33,9 @@ export const setAuthTokenCookie = (res: Response, token: string): void => {
   });
 
   res.cookie('authStatus', 'authenticated', {
-    httpOnly: false, // ✅ Middleware kann es lesen
+    httpOnly: false,
     secure: true,
-    sameSite: 'strict', // Same-domain OK für Frontend
+    sameSite: 'lax' as const,
     maxAge: SESSION_DURATION,
     path: '/',
   });
