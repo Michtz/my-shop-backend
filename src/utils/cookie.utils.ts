@@ -31,6 +31,14 @@ export const setAuthTokenCookie = (res: Response, token: string): void => {
     maxAge: SESSION_DURATION,
     path: '/',
   });
+
+  res.cookie('authStatus', 'authenticated', {
+    httpOnly: false, // ✅ Middleware kann es lesen
+    secure: true,
+    sameSite: 'strict', // Same-domain OK für Frontend
+    maxAge: SESSION_DURATION,
+    path: '/',
+  });
 };
 
 export const clearSessionCookie = (res: Response): void => {
