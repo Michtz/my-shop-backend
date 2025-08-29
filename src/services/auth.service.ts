@@ -15,6 +15,13 @@ import bcrypt from 'bcrypt';
 
 const SALT_ROUNDS = 10;
 
+const validatePassword = (password: unknown): string => {
+  if (typeof password !== 'string' || password.length < 6) {
+    throw new Error('Password must be a string with at least 6 characters');
+  }
+  return password;
+};
+
 export const register = async (
   email: string,
   password: string,
@@ -31,7 +38,8 @@ export const register = async (
       };
     }
 
-    const hashedPassword = await bcrypt.hash(String(password), SALT_ROUNDS);
+    const validPassword = validatePassword(password);
+    const hashedPassword = await bcrypt.hash(validPassword, SALT_ROUNDS);
 
     const user = new User({
       email,
@@ -104,10 +112,10 @@ export const login = async (
       };
     }
 
-    const plainPassword = String(password);
+    const validPassword = validatePassword(password);
     const storedHash = String(user.password);
 
-    const isPasswordValid = await bcrypt.compare(plainPassword, storedHash);
+    const isPasswordValid = await bcrypt.compare(validPassword, storedHash);
     if (!isPasswordValid) {
       return {
         success: false,
@@ -370,10 +378,11 @@ export const changePassword = async (
       };
     }
 
-    const plainPassword = String(currentPassword);
+    const validCurrentPassword = validatePassword(currentPassword);
+    const validNewPassword = validatePassword(newPassword);
     const storedHash = String(user.password);
 
-    const isPasswordValid = await bcrypt.compare(plainPassword, storedHash);
+    const isPasswordValid = await bcrypt.compare(validCurrentPassword, storedHash);
     if (!isPasswordValid) {
       return {
         success: false,
@@ -381,7 +390,7 @@ export const changePassword = async (
       };
     }
 
-    user.password = await bcrypt.hash(String(newPassword), SALT_ROUNDS);
+    user.password = await bcrypt.hash(validNewPassword, SALT_ROUNDS);
 
     user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();

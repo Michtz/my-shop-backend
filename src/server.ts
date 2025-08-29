@@ -1,14 +1,12 @@
 import express, { Express, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import http from 'http';
 import cookieParser from 'cookie-parser';
 import cron from 'node-cron';
+import { env } from './config/env'; // This validates environment variables
 import { initializeSocketIO } from './services/socket.service';
 import { releaseExpiredReservations } from './services/reservation.service';
-
-dotenv.config();
 
 import paymentRoutes from './routes/payment.routes';
 import sessionRoutes from './routes/session.routes';
@@ -95,7 +93,7 @@ console.log('Reservation cleanup cron job started (every 5 minutes)');
 const PORT = process.env.PORT || 4200;
 
 mongoose
-  .connect(process.env.MONGODB_URI || '')
+  .connect(env.MONGODB_URI)
   .then(() => {
     server.listen(PORT, () => {
       console.log(`Server is running on: ${PORT}`);

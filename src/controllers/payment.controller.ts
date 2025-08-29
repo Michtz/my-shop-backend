@@ -2,19 +2,56 @@ import { Request, Response } from 'express';
 import * as StripeService from '../services/stripe.service';
 import * as CartService from '../services/cart.service';
 import * as OrderService from '../services/order.service';
+import { env } from '../config/env';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
   apiVersion: '2025-05-28.basil',
 });
 
+const validateSessionId = (sessionId: unknown): string => {
+  if (typeof sessionId !== 'string' || !sessionId.trim()) {
+    throw new Error('Invalid session ID');
+  }
+  return sessionId.trim();
+};
+
+const validatePaymentData = (data: any): { paymentIntentId: string; paymentMethodId?: string } => {
+  const { paymentIntentId, paymentMethodId } = data;
+  
+  if (typeof paymentIntentId !== 'string' || !paymentIntentId.trim()) {
+    throw new Error('Payment Intent ID is required and must be a valid string');
+  }
+
+  if (paymentMethodId && typeof paymentMethodId !== 'string') {
+    throw new Error('Payment Method ID must be a string if provided');
+  }
+
+  return {
+    paymentIntentId: paymentIntentId.trim(),
+    paymentMethodId: paymentMethodId?.trim()
+  };
+};
+
 export const createPaymentIntent = async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
+    const sessionId = validateSessionId(req.params.sessionId);
 
     const cartResult = await CartService.getCart(sessionId);
     if (!cartResult.success || !cartResult.data) {
       res.status(404).json({ success: false, error: 'Cart not found' });
+      return;
+    }
+
+    // Validate cart total
+    if (cartResult.data.total <= 0) {
+      res.status(400).json({ success: false, error: 'Cart total must be greater than 0' });
+      return;
+    }
+
+    // Validate cart has items
+    if (!cartResult.data.items || cartResult.data.items.length === 0) {
+      res.status(400).json({ success: false, error: 'Cart is empty' });
       return;
     }
 
@@ -30,16 +67,8 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
 };
 export const confirmPayment = async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
-    const { paymentIntentId, paymentMethodId } = req.body;
-
-    if (!sessionId || !paymentIntentId) {
-      res.status(400).json({
-        success: false,
-        error: 'Session ID and Payment Intent ID are required',
-      });
-      return;
-    }
+    const sessionId = validateSessionId(req.params.sessionId);
+    const { paymentIntentId, paymentMethodId } = validatePaymentData(req.body);
 
     // Get payment method details from Stripe
     let paymentMethodDetails: {

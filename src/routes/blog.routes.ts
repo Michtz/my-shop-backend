@@ -12,7 +12,7 @@ import {
   publishPost,
   unpublishPost,
 } from '../controllers/blog.controller';
-import { authenticate, authorize } from '../middleware/auth.middelware';
+import { authenticate, authorize } from '../middleware/auth.middleware';
 import {
   uploadProductImage,
   handleUploadError,

@@ -9,7 +9,7 @@ import {
   validateToken,
   updateUserController,
 } from '../controllers/auth.controller';
-import { authenticate, authorize } from '../middleware/auth.middelware';
+import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthRequest } from '../models/auth.model';
 
 const router = Router();

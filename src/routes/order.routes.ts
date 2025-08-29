@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.middelware';
 import * as OrderController from '../controllers/order.controller';
 import { OrderRequest } from '../models/order.model';
 import { Response } from 'express';

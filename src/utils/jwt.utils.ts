@@ -1,6 +1,8 @@
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { User } from '../models/user.model';
 import { BlacklistedToken } from '../models/auth.model';
+import { env } from '../config/env';
 
 export interface JwtPayload {
   id: string;
@@ -13,18 +15,20 @@ export interface JwtRefreshPayload {
   tokenVersion: number;
 }
 
-const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_REFRESH_SECRET: string =
-  process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
+const JWT_SECRET: string = env.JWT_SECRET;
+const JWT_REFRESH_SECRET: string = env.JWT_REFRESH_SECRET;
 const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '15m';
-const JWT_REFRESH_EXPIRES_IN: string = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+const JWT_REFRESH_EXPIRES_IN: string =
+  process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 
 export const generateToken = (payload: JwtPayload): string => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as any);
 };
 
 export const generateRefreshToken = (payload: JwtRefreshPayload): string => {
-  return jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: JWT_REFRESH_EXPIRES_IN } as any);
+  return jwt.sign(payload, JWT_REFRESH_SECRET, {
+    expiresIn: JWT_REFRESH_EXPIRES_IN,
+  } as any);
 };
 
 export const verifyToken = (token: string): JwtPayload | null => {
@@ -75,5 +79,5 @@ export const isTokenBlacklisted = async (token: string): Promise<boolean> => {
 };
 
 export const generateSessionId = (): string => {
-  return `sess_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+  return `sess_${crypto.randomBytes(16).toString('hex')}`;
 };
