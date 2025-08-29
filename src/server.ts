@@ -28,6 +28,7 @@ app.use(
     origin: [
       'http://localhost:3000',
       'https://my-shop-frontend-ten.vercel.app',
+      'https://my-shop-frontend-aknp.onrender.com/de',
       process.env.FRONTEND_URL,
     ].filter(Boolean),
     credentials: true,
