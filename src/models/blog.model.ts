@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Request } from 'express';
+import { MulterFile } from '../types/multer';
 
 export interface BlogResponse {
   success: boolean;
@@ -34,7 +35,7 @@ export interface IBlog {
   published_at?: Date;
 }
 
-export interface BlogRequest extends Request {
+export interface BlogRequest extends Omit<Request, 'file'> {
   params: {
     id?: string;
     slug?: string;
@@ -61,7 +62,7 @@ export interface BlogRequest extends Request {
     status?: string;
     [key: string]: any;
   };
-  file?: Express.Multer.File;
+  file?: MulterFile;
   user?: {
     id: string;
     email: string;

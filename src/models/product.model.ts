@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Request } from 'express';
+import { MulterFile } from '../types/multer';
 
 export interface ProductResponse {
   success: boolean;
@@ -25,7 +26,7 @@ export interface IProduct {
   lastUpdated: Date;
 }
 
-export interface ProductRequest extends Request {
+export interface ProductRequest extends Omit<Request, 'file'> {
   params: {
     id?: string;
   };
@@ -39,7 +40,7 @@ export interface ProductRequest extends Request {
     data?: string;
     [key: string]: any;
   };
-  file?: Express.Multer.File;
+  file?: MulterFile;
 }
 
 export interface IProductDocument extends IProduct, Document {
