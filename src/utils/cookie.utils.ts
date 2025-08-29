@@ -31,14 +31,6 @@ export const setAuthTokenCookie = (res: Response, token: string): void => {
     maxAge: SESSION_DURATION,
     path: '/',
   });
-
-  res.cookie('authStatus', 'authenticated', {
-    httpOnly: false,
-    secure: true,
-    sameSite: 'lax' as const,
-    maxAge: SESSION_DURATION,
-    path: '/',
-  });
 };
 
 export const clearSessionCookie = (res: Response): void => {
@@ -62,6 +54,6 @@ export const clearAuthTokenCookie = (res: Response): void => {
 };
 
 export const clearAllAuthCookies = (res: Response): void => {
-  // clearSessionCookie(res);
+  clearSessionCookie(res);
   clearAuthTokenCookie(res);
 };
