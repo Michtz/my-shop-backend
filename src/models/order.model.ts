@@ -10,17 +10,6 @@ export interface OrderResponse {
   error?: string;
 }
 
-export interface OrderCreateData {
-  sessionId: string;
-  userId?: string;
-  cartSnapshot: {
-    items: ICartItem[];
-    total: number;
-    userInfo?: IUserCartInfo;
-  };
-  paymentIntentId: string;
-}
-
 export interface IOrder extends Document {
   orderNumber: string;
   sessionId: string;

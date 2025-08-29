@@ -1,5 +1,17 @@
-import { Router } from 'express';
-import * as BlogController from '../controllers/blog.controller';
+import { Router, Response, Request } from 'express';
+import {
+  getAllPublishedPosts,
+  getPostBySlug,
+  getPostsByTag,
+  getFeaturedPosts,
+  createPost,
+  updatePost,
+  deletePost,
+  getAllPosts,
+  getPostById,
+  publishPost,
+  unpublishPost,
+} from '../controllers/blog.controller';
 import { authenticate, authorize } from '../middleware/auth.middelware';
 import {
   uploadProductImage,
@@ -8,78 +20,64 @@ import {
 
 const router = Router();
 
-// Public Routes
-// GET all published blog posts (with pagination and filtering)
-router.get('/', BlogController.getAllPublishedPosts);
+router
+  .route('/')
+  .get((req: Request, res: Response) => getAllPublishedPosts(req, res));
 
-// GET single blog post by slug
-router.get('/:slug', BlogController.getPostBySlug);
+router
+  .route('/featured')
+  .get((req: Request, res: Response) => getFeaturedPosts(req, res));
 
-// GET posts by tag
-router.get('/tag/:tag', BlogController.getPostsByTag);
+router
+  .route('/tag/:tag')
+  .get((req: Request, res: Response) => getPostsByTag(req, res));
 
-// GET featured posts
-router.get('/featured', BlogController.getFeaturedPosts);
+router
+  .route('/:slug')
+  .get((req: Request, res: Response) => getPostBySlug(req, res));
 
-// Admin Routes (require authentication and admin role)
-// POST create new blog post (with optional image upload)
-router.post(
-  '/admin',
-  authenticate,
-  authorize(['admin']),
-  uploadProductImage,
-  handleUploadError,
-  BlogController.createPost,
-);
+router
+  .route('/admin/posts')
+  .get(authenticate, authorize(['admin']), (req: Request, res: Response) =>
+    getAllPosts(req, res),
+  );
 
-// PUT update blog post (with optional image upload)  
-router.put(
-  '/admin/:id',
-  authenticate,
-  authorize(['admin']),
-  uploadProductImage,
-  handleUploadError,
-  BlogController.updatePost,
-);
+router
+  .route('/admin')
+  .post(
+    authenticate,
+    authorize(['admin']),
+    uploadProductImage,
+    handleUploadError,
+    (req: Request, res: Response) => createPost(req, res),
+  );
 
-// DELETE blog post
-router.delete(
-  '/admin/:id',
-  authenticate,
-  authorize(['admin']),
-  BlogController.deletePost,
-);
+router
+  .route('/admin/:id')
+  .get(authenticate, authorize(['admin']), (req: Request, res: Response) =>
+    getPostById(req, res),
+  )
+  .put(
+    authenticate,
+    authorize(['admin']),
+    uploadProductImage,
+    handleUploadError,
+    (req: Request, res: Response) => updatePost(req, res),
+  )
+  .delete(authenticate, authorize(['admin']), (req: Request, res: Response) =>
+    deletePost(req, res),
+  );
 
-// GET all blog posts for admin (including drafts)
-router.get(
-  '/admin/posts',
-  authenticate,
-  authorize(['admin']),
-  BlogController.getAllPosts,
-);
+router
+  .route('/admin/:id/publish')
+  .patch(authenticate, authorize(['admin']), (req: Request, res: Response) =>
+    publishPost(req, res),
+  );
 
-// GET blog post by ID for admin
-router.get(
-  '/admin/:id',
-  authenticate,
-  authorize(['admin']),
-  BlogController.getPostById,
-);
-
-// PATCH publish blog post
-router.patch(
-  '/admin/:id/publish',
-  authenticate,
-  authorize(['admin']),
-  BlogController.publishPost,
-);
-
-// PATCH unpublish blog post
-router.patch(
-  '/admin/:id/unpublish',
-  authenticate,
-  authorize(['admin']),
-  BlogController.unpublishPost,
-);
+router
+  .route('/admin/:id/unpublish')
+  .patch(authenticate, authorize(['admin']), (req: Request, res: Response) =>
+    unpublishPost(req, res),
+  );
 
 export default router;

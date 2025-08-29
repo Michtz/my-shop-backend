@@ -1,14 +1,10 @@
 import multer from 'multer';
-import path from 'path';
 import { Request, Response, NextFunction } from 'express';
 
-// Erlaubte Dateiformate
 const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
-// Multer Konfiguration für Memory Storage (Cloudinary braucht Buffer)
 const storage = multer.memoryStorage();
 
-// File Filter
 const fileFilter = (
   req: Request,
   file: Express.Multer.File,
@@ -26,14 +22,13 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB Limit
+    fileSize: 10 * 1024 * 1024, // 10MB Limit
   },
 });
 
-// Middleware für optionale Bild-Uploads
 export const uploadProductImage = upload.single('image');
 
-// Error Handler für Multer
+// Error handler for Multer
 export const handleUploadError = (
   err: any,
   req: Request,

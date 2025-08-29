@@ -4,7 +4,7 @@ import * as ProductService from '../services/product.service';
 import { ProductRequest } from '../models/product.model';
 
 export const getAllProducts = async (
-  req: Request,
+  req: any,
   res: Response,
 ): Promise<void> => {
   try {

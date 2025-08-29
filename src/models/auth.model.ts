@@ -38,9 +38,15 @@ export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: string;
+    role?: string;
   };
   sessionId?: string;
+  cookies: {
+    [key: string]: string;
+  };
+  headers: {
+    [key: string]: string | string[] | undefined;
+  };
 }
 
 export interface IBlacklistedToken extends Document {

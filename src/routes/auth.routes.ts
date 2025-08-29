@@ -1,6 +1,4 @@
 import { Router, Response } from 'express';
-import { AuthRequest } from '../types';
-
 import {
   register,
   login,
@@ -12,6 +10,7 @@ import {
   updateUserController,
 } from '../controllers/auth.controller';
 import { authenticate, authorize } from '../middleware/auth.middelware';
+import { AuthRequest } from '../models/auth.model';
 
 const router = Router();
 
