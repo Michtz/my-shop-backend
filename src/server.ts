@@ -70,10 +70,9 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/blog', blogRoutes);
 
-// Socket.io initialization
 initializeSocketIO(server);
 
-// Cron Job: All 5min expired reservations cleanup
+// Cron Job: All 5min
 cron.schedule('*/5 * * * *', async () => {
   console.log('Running reservation cleanup...');
   try {
@@ -99,7 +98,7 @@ mongoose
   .connect(process.env.MONGODB_URI || '')
   .then(() => {
     server.listen(PORT, () => {
-      console.log(`Server is running on: http://localhost:${PORT}`);
+      console.log(`Server is running on: ${PORT}`);
       console.log('MongoDB is connected');
     });
   })

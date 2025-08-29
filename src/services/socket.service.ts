@@ -47,7 +47,7 @@ export const initializeSocketIO = (httpServer: HttpServer): void => {
   io.on('connection', (socket) => {
     console.log(`New client connected: ${socket.id}`);
 
-    // Session Room - IMMER
+    // Session Room
     socket.on('join_session', (sessionId: string) => {
       socket.join(`session:${sessionId}`);
       console.log(`Client ${socket.id} joined session room: ${sessionId}`);
@@ -59,15 +59,15 @@ export const initializeSocketIO = (httpServer: HttpServer): void => {
     });
 
     // User Room - NUR wenn eingeloggt
-    socket.on('join_user', (userId: string) => {
-      socket.join(`user:${userId}`);
-      console.log(`Client ${socket.id} joined user room: ${userId}`);
-    });
-
-    socket.on('leave_user', (userId: string) => {
-      socket.leave(`user:${userId}`);
-      console.log(`Client ${socket.id} left user room: ${userId}`);
-    });
+    // socket.on('join_user', (userId: string) => {
+    //   socket.join(`user:${userId}`);
+    //   console.log(`Client ${socket.id} joined user room: ${userId}`);
+    // });
+    //
+    // socket.on('leave_user', (userId: string) => {
+    //   socket.leave(`user:${userId}`);
+    //   console.log(`Client ${socket.id} left user room: ${userId}`);
+    // });
 
     // Produkt Room - für Live Stock Updates
     socket.on('watch_product', (productId: string) => {
@@ -80,19 +80,19 @@ export const initializeSocketIO = (httpServer: HttpServer): void => {
       console.log(`Client ${socket.id} stopped watching product: ${productId}`);
     });
 
-    // Category Room - für Category Updates
-    socket.on('watch_category', (category: string) => {
-      socket.join(`category:${category}`);
-      console.log(`Client ${socket.id} watching category: ${category}`);
-    });
+    // // Category Room - für Category Updates
+    // socket.on('watch_category', (category: string) => {
+    //   socket.join(`category:${category}`);
+    //   console.log(`Client ${socket.id} watching category: ${category}`);
+    // });
+    //
+    // socket.on('unwatch_category', (category: string) => {
+    //   socket.leave(`category:${category}`);
+    //   console.log(`Client ${socket.id} stopped watching category: ${category}`);
+    // });
 
-    socket.on('unwatch_category', (category: string) => {
-      socket.leave(`category:${category}`);
-      console.log(`Client ${socket.id} stopped watching category: ${category}`);
-    });
-
-    // Shop Updates - Allgemeine Updates
-    socket.join('shop_updates');
+    // // Shop Updates - Allgemeine Updates
+    // socket.join('shop_updates');
 
     socket.on('disconnect', () => {
       console.log(`Client disconnected: ${socket.id}`);
@@ -112,15 +112,15 @@ export const emitCartItemReserved = (data: CartReservationData): void => {
   // An Session senden
   io.to(`session:${data.sessionId}`).emit('cart_item_reserved', data);
 
-  // An User senden (Multi-Device)
-  if (data.userId) {
-    io.to(`user:${data.userId}`).emit('cart_synced', {
-      type: 'item_reserved',
-      data,
-    });
-  }
+  // // An User senden (Multi-Device)
+  // if (data.userId) {
+  //   io.to(`user:${data.userId}`).emit('cart_synced', {
+  //     type: 'item_reserved',
+  //     data,
+  //   });
+  // }
 
-  // An Product Watchers - jemand hat es reserviert
+  // to all Product Watchers - product is reserved now
   io.to(`product:${data.productId}`).emit('product_reserved', {
     productId: data.productId,
     cartCount: data.cartCount,
@@ -137,14 +137,14 @@ export const emitCartItemReleased = (data: CartReservationData): void => {
 
   // An Session senden
   io.to(`session:${data.sessionId}`).emit('cart_item_released', data);
-
-  // An User senden (Multi-Device)
-  if (data.userId) {
-    io.to(`user:${data.userId}`).emit('cart_synced', {
-      type: 'item_released',
-      data,
-    });
-  }
+  //
+  // // An User senden (Multi-Device)
+  // if (data.userId) {
+  //   io.to(`user:${data.userId}`).emit('cart_synced', {
+  //     type: 'item_released',
+  //     data,
+  //   });
+  // }
 
   // An Product Watchers - wieder verfügbar
   io.to(`product:${data.productId}`).emit('product_released', {
@@ -154,7 +154,6 @@ export const emitCartItemReleased = (data: CartReservationData): void => {
   });
 };
 
-// Cart komplett geupdated
 export const emitCartUpdated = (cart: ICartDocument): void => {
   if (!io) {
     console.warn('Socket.io is not initialized. Cart update not emitted.');
@@ -170,22 +169,19 @@ export const emitCartUpdated = (cart: ICartDocument): void => {
     updatedAt: new Date(),
   };
 
-  // An Session senden
   io.to(`session:${cart.sessionId}`).emit('cart_updated', updateData);
 
-  // An User senden (Multi-Device)
-  if (cart.userId) {
-    io.to(`user:${cart.userId}`).emit('cart_synced', {
-      type: 'cart_updated',
-      data: updateData,
-    });
-  }
+  // // An User senden (Multi-Device)
+  // if (cart.userId) {
+  //   io.to(`user:${cart.userId}`).emit('cart_synced', {
+  //     type: 'cart_updated',
+  //     data: updateData,
+  //   });
+  // }
 };
 
-// Stock Konflikt
 export const emitStockConflict = (
   sessionId: string,
-  userId: string | undefined,
   conflictData: StockConflictData,
 ): void => {
   if (!io) {
@@ -193,19 +189,9 @@ export const emitStockConflict = (
     return;
   }
 
-  // An betroffene Session senden
   io.to(`session:${sessionId}`).emit('cart_stock_conflict', conflictData);
-
-  // An User senden (Multi-Device)
-  if (userId) {
-    io.to(`user:${userId}`).emit('cart_synced', {
-      type: 'stock_conflict',
-      data: conflictData,
-    });
-  }
 };
 
-// Produkt Stock geupdated (Admin/System)
 export const emitProductStockUpdated = (product: IProductDocument): void => {
   if (!io) {
     console.warn(
@@ -223,17 +209,16 @@ export const emitProductStockUpdated = (product: IProductDocument): void => {
     lastUpdated: product.lastUpdated,
   };
 
-  // An alle Product Watchers
   io.to(`product:${product._id}`).emit('product_stock_updated', stockData);
 
-  // An Category Watchers
-  io.to(`category:${product.category}`).emit(
-    'category_stock_updated',
-    stockData,
-  );
+  // // An Category Watchers
+  // io.to(`category:${product.category}`).emit(
+  //   'category_stock_updated',
+  //   stockData,
+  // );
 
-  // An alle Shop Updates
-  io.to('shop_updates').emit('stock_updated', stockData);
+  // // An alle Shop Updates
+  // io.to('shop_updates').emit('stock_updated', stockData);
 
   // Low Stock Warning
   if (stockData.availableQuantity <= 5 && stockData.availableQuantity > 0) {
@@ -253,11 +238,10 @@ export const emitProductStockUpdated = (product: IProductDocument): void => {
   }
 };
 
-// Reservierung abgelaufen (Cleanup)
+// cleanup
 export const emitReservationExpired = (
   productId: string,
   sessionId: string,
-  userId?: string,
 ): void => {
   if (!io) {
     console.warn(
@@ -275,13 +259,13 @@ export const emitReservationExpired = (
   // An betroffene Session
   io.to(`session:${sessionId}`).emit('reservation_expired', expiredData);
 
-  // An User (Multi-Device)
-  if (userId) {
-    io.to(`user:${userId}`).emit('cart_synced', {
-      type: 'reservation_expired',
-      data: expiredData,
-    });
-  }
+  // // An User (Multi-Device)
+  // if (userId) {
+  //   io.to(`user:${userId}`).emit('cart_synced', {
+  //     type: 'reservation_expired',
+  //     data: expiredData,
+  //   });
+  // }
 };
 
 // Utility

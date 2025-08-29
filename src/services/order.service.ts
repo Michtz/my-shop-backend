@@ -1,10 +1,8 @@
-import {
-  Order,
-  IOrder,
-  OrderCreateData,
-  OrderResponse,
-} from '../models/order.model';
+import { Order, OrderResponse } from '../models/order.model';
 import * as CartService from './cart.service';
+import * as ProductService from './product.service';
+import { Cart } from '../models/cart.model';
+import { releaseCartItemReservation } from './reservation.service';
 
 export const createOrderFromCart = async (
   sessionId: string,
@@ -12,7 +10,6 @@ export const createOrderFromCart = async (
   paymentMethodDetails: any,
 ): Promise<OrderResponse> => {
   try {
-    // Get cart data
     const cartResult = await CartService.getCart(sessionId);
     if (!cartResult.success || !cartResult.data) {
       return {
@@ -32,7 +29,6 @@ export const createOrderFromCart = async (
       };
     }
 
-    // Generate order number manually
     const generateOrderNumber = (): string => {
       const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const uuid = require('uuid').v4().slice(0, 8).toUpperCase();
@@ -41,7 +37,7 @@ export const createOrderFromCart = async (
 
     // Create new order
     const order = new Order({
-      orderNumber: generateOrderNumber(), // <- Explizit setzen!
+      orderNumber: generateOrderNumber(),
       sessionId: cart.sessionId,
       userId: cart.userId,
       customerInfo: cart.userInfo,
@@ -53,10 +49,26 @@ export const createOrderFromCart = async (
     });
 
     await order.save();
-
-    // Populate product details
     await order.populate('items.productId');
 
+    // update product quantity, release socked reservation
+    for (const item of cart.items) {
+      const product = await ProductService.getProductById(item.productId.id);
+      let newQuantity: number;
+      if ('stockQuantity' in product.data) {
+        newQuantity = product.data.stockQuantity - item.quantity;
+      }
+
+      await ProductService.updateStock(item.productId.id, newQuantity);
+
+      await releaseCartItemReservation(
+        sessionId,
+        item.productId.id,
+        item.quantity,
+      );
+    }
+
+    await Cart.findOneAndDelete({ sessionId });
     return {
       success: true,
       data: order,
@@ -73,33 +85,6 @@ export const createOrderFromCart = async (
 export const getOrder = async (orderNumber: string): Promise<OrderResponse> => {
   try {
     const order = await Order.findOne({ orderNumber }).populate(
-      'items.productId',
-    );
-
-    if (!order) {
-      return {
-        success: false,
-        error: 'Order not found',
-      };
-    }
-
-    return {
-      success: true,
-      data: order,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: 'Failed to fetch order',
-    };
-  }
-};
-
-export const getOrderByPaymentIntent = async (
-  paymentIntentId: string,
-): Promise<OrderResponse> => {
-  try {
-    const order = await Order.findOne({ paymentIntentId }).populate(
       'items.productId',
     );
 

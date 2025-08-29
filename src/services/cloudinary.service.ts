@@ -53,7 +53,6 @@ export const uploadProductImage = async (
             console.error('❌ Cloudinary upload error:', error);
             reject(error);
           } else {
-            console.log('✅ Upload successful:', result?.secure_url);
             resolve(result);
           }
         },

@@ -1,13 +1,9 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import mongoose from 'mongoose';
 import * as ProductService from '../services/product.service';
 import { ProductRequest } from '../models/product.model';
 
-export const getAllProducts = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  console.log('CONTROLLER TEST');
+export const getAllProducts = async (res: Response): Promise<void> => {
   try {
     const result = await ProductService.getAllProducts();
     const status = result.success ? 200 : 500;
@@ -54,14 +50,12 @@ export const createProduct = async (
   res: Response,
 ): Promise<void> => {
   try {
-    // Parse JSON data from multipart form wenn vorhanden
     let productData: any = req.body;
 
     if (req.body.data) {
       try {
         productData = JSON.parse(req.body.data);
       } catch (parseError) {
-        // Falls data nicht JSON ist, nutze direkt req.body
         productData = req.body;
       }
     }
@@ -74,7 +68,6 @@ export const createProduct = async (
       return;
     }
 
-    // Parse numerische Werte falls sie als String kommen (multipart/form-data)
     if (typeof productData.price === 'string') {
       productData.price = parseFloat(productData.price);
     }
@@ -107,19 +100,16 @@ export const updateProduct = async (
       return;
     }
 
-    // Parse JSON data from multipart form wenn vorhanden
     let updateData: any = req.body;
 
     if (req.body.data) {
       try {
         updateData = JSON.parse(req.body.data);
       } catch (parseError) {
-        // Falls data nicht JSON ist, nutze direkt req.body
         updateData = req.body;
       }
     }
 
-    // Parse numerische Werte falls sie als String kommen (multipart/form-data)
     if (typeof updateData.price === 'string') {
       updateData.price = parseFloat(updateData.price);
     }

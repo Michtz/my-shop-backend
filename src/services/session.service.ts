@@ -50,24 +50,6 @@ export const getSession = async (
   }
 };
 
-export const getAllSessions = async (
-  filter: any = {},
-): Promise<SessionResponse> => {
-  try {
-    const sessions = await Session.find(filter).exec();
-
-    return {
-      success: true,
-      data: sessions.map((session) => session.toObject()),
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-};
-
 export const updateSession = async (
   sessionId: string,
   updateData: Partial<ISession>,

@@ -56,7 +56,6 @@ export const createProduct = async (
       };
     }
 
-    // Bild hochladen falls vorhanden
     if (imageFile) {
       const uploadResult = await uploadToCloudinary(imageFile);
       if (!uploadResult.success) {
@@ -96,9 +95,7 @@ export const updateProduct = async (
       return { success: false, error: 'Product not found' };
     }
 
-    // Neues Bild hochladen falls vorhanden
     if (imageFile) {
-      // Altes Bild löschen falls vorhanden
       if (existingProduct.imageUrl) {
         const oldPublicId = extractPublicId(existingProduct.imageUrl);
         if (oldPublicId) {
@@ -106,7 +103,6 @@ export const updateProduct = async (
         }
       }
 
-      // Neues Bild hochladen
       const uploadResult = await uploadToCloudinary(imageFile);
       if (!uploadResult.success) {
         return {
@@ -190,7 +186,7 @@ export const deleteProduct = async (
       return { success: false, error: 'Product not found' };
     }
 
-    // Bild löschen falls vorhanden
+    // delete picture
     if (existingProduct.imageUrl) {
       const publicId = extractPublicId(existingProduct.imageUrl);
       if (publicId) {

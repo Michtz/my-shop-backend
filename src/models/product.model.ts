@@ -43,7 +43,7 @@ export interface ProductRequest extends Request {
 }
 
 export interface IProductDocument extends IProduct, Document {
-  availableQuantity: number; // Virtual field
+  availableQuantity?: number; // Virtual field
 }
 
 const productSchema = new Schema<IProductDocument>(

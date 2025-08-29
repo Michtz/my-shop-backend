@@ -25,7 +25,7 @@ export interface CartCreateData {
 }
 
 export interface ICartItem {
-  productId: string | Schema.Types.ObjectId;
+  productId: string | Schema.Types.ObjectId | any;
   quantity: number;
   price: number;
   reservedUntil?: Date; // NEU: Reservierung bis wann

@@ -242,7 +242,6 @@ export const replaceCartItems = async (
   }
 };
 
-// Todo: control after fix of user service
 export const updateCartUserInfo = async (
   req: CartRequest,
   res: Response,
@@ -274,7 +273,6 @@ export const updateCartUserInfo = async (
   }
 };
 
-// Todo: control after fix of user service
 export const updateCartAddress = async (
   req: CartRequest,
   res: Response,
@@ -305,7 +303,6 @@ export const updateCartAddress = async (
   }
 };
 
-// Todo: control after fix of user service
 export const updateCartPayment = async (
   req: CartRequest,
   res: Response,
@@ -336,7 +333,6 @@ export const updateCartPayment = async (
   }
 };
 
-// works as intended
 export const updateCartGuestInfo = async (
   req: CartRequest,
   res: Response,
@@ -370,7 +366,7 @@ export const updateCartGuestInfo = async (
   }
 };
 
-// NEW: Update complete cart
+// NEW: Update complete cart Todo: implement when enough time
 export const updateCart = async (
   req: CartRequest,
   res: Response,

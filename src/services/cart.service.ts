@@ -3,7 +3,6 @@ import {
   CartCreateData,
   CartResponse,
   IUserCartInfo,
-  ICartDocument,
 } from '../models/cart.model';
 import mongoose from 'mongoose';
 import { Product } from '../models/product.model';
@@ -124,7 +123,7 @@ export const addToCart = async (
         availableStock: availableQuantity,
         conflictType: 'insufficient_stock',
       };
-      emitStockConflict(sessionId, userId, conflictData);
+      emitStockConflict(sessionId, conflictData);
 
       return {
         success: false,
@@ -316,7 +315,7 @@ export const updateCartItem = async (
           availableStock: availableQuantity + oldQuantity,
           conflictType: 'insufficient_stock',
         };
-        emitStockConflict(sessionId, cart.userId, conflictData);
+        emitStockConflict(sessionId, conflictData);
 
         return {
           success: false,

@@ -42,7 +42,11 @@ export const confirmPayment = async (req: Request, res: Response) => {
     }
 
     // Get payment method details from Stripe
-    let paymentMethodDetails: { last4: string; brand: string; paymentMethodId: string } | null = null;
+    let paymentMethodDetails: {
+      last4: string;
+      brand: string;
+      paymentMethodId: string;
+    } | null = null;
     if (paymentMethodId) {
       try {
         const paymentMethod =
@@ -74,16 +78,8 @@ export const confirmPayment = async (req: Request, res: Response) => {
       return;
     }
 
-    // orderResult.data is a single IOrder in this context (not an array)
-    const order = orderResult.data as any; // Type assertion since we know it's a single order
+    const order = orderResult.data as any;
     const orderNumber = order?.orderNumber;
-    
-    console.log('Payment confirmed and order created:', {
-      sessionId,
-      paymentIntentId,
-      orderNumber,
-      hasOrderData: !!orderResult.data,
-    });
 
     res.status(200).json({
       success: true,

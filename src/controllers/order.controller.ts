@@ -23,7 +23,11 @@ export const createOrder = async (
       return;
     }
 
-    let paymentMethodDetails: { last4: string; brand: string; paymentMethodId: string } | null = null;
+    let paymentMethodDetails: {
+      last4: string;
+      brand: string;
+      paymentMethodId: string;
+    } | null = null;
     if (paymentMethodId) {
       try {
         const paymentMethod =
@@ -138,31 +142,6 @@ export const getAllOrders = async (
     res.status(500).json({
       success: false,
       error: 'Server error while fetching orders',
-    });
-  }
-};
-
-export const getUserOrders = async (
-  req: OrderRequest,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { userId } = req.params;
-
-    if (!userId) {
-      res.status(400).json({
-        success: false,
-        error: 'User ID is required',
-      });
-      return;
-    }
-
-    const result = await OrderService.getUserOrders(userId);
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Server error while fetching user orders',
     });
   }
 };

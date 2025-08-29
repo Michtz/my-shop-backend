@@ -1,9 +1,16 @@
-import { Router } from 'express';
-import * as PaymentController from '../controllers/payment.controller';
-
+import { Router, Response, Request } from 'express';
+import {
+  createPaymentIntent,
+  confirmPayment,
+} from '../controllers/payment.controller';
 const router = Router();
 
-router.post('/create-intent/:sessionId', PaymentController.createPaymentIntent);
-router.post('/confirm/:sessionId', PaymentController.confirmPayment);
+router
+  .route('/create-intent/:sessionId')
+  .post((req: Request, res: Response) => createPaymentIntent(req, res));
+
+router
+  .route('/confirm/:sessionId')
+  .post((req: Request, res: Response) => confirmPayment(req, res));
 
 export default router;
