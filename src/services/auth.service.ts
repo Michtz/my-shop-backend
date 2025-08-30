@@ -269,7 +269,6 @@ export const logout = async (
       data: null,
     };
   } catch (error) {
-    console.error('Logout error:', error);
     return {
       success: false,
       error:
@@ -382,7 +381,10 @@ export const changePassword = async (
     const validNewPassword = validatePassword(newPassword);
     const storedHash = String(user.password);
 
-    const isPasswordValid = await bcrypt.compare(validCurrentPassword, storedHash);
+    const isPasswordValid = await bcrypt.compare(
+      validCurrentPassword,
+      storedHash,
+    );
     if (!isPasswordValid) {
       return {
         success: false,

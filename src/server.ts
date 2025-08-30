@@ -3,10 +3,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import http from 'http';
 import cookieParser from 'cookie-parser';
-//import cron from 'node-cron';
-import { env } from './config/env'; // This validates environment variables
+import { env } from './config/env';
 import { initializeSocketIO } from './services/socket.service';
-// import { releaseExpiredReservations } from './services/reservation.service';
 
 import paymentRoutes from './routes/payment.routes';
 import sessionRoutes from './routes/session.routes';
@@ -51,7 +49,7 @@ app.get('/test', (req: Request, res: Response) => {
 
 app.get('/', (req: Request, res: Response) => {
   res.json({
-    message: 'Welcome to myShop',
+    message: 'Welcome to Barista Accessoire',
     endpoints: {
       test: '/test',
       products: '/api/products',
@@ -69,26 +67,6 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/blog', blogRoutes);
 
 initializeSocketIO(server);
-//
-// // Cron Job: All 5min
-// cron.schedule('*/5 * * * *', async () => {
-//   console.log('Running reservation cleanup...');
-//   try {
-//     const result = await releaseExpiredReservations();
-//     if (result.expiredReservations > 0) {
-//       console.log(
-//         `Cleanup completed: ${result.expiredReservations} reservations released`,
-//       );
-//     }
-//     if (result.errors.length > 0) {
-//       console.error('Cleanup errors:', result.errors);
-//     }
-//   } catch (error) {
-//     console.error('Reservation cleanup failed:', error);
-//   }
-// });
-
-// console.log('Reservation cleanup cron job started (every 5 minutes)');
 
 const PORT = process.env.PORT || 4200;
 
@@ -96,7 +74,7 @@ mongoose
   .connect(env.MONGODB_URI)
   .then(() => {
     server.listen(PORT, () => {
-      console.log(`Server is running on: ${PORT}`);
+      console.log(`Port: ${PORT}`);
       console.log('MongoDB is connected');
     });
   })
