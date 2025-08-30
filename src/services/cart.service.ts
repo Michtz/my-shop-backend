@@ -63,7 +63,18 @@ export const getCart = async (
     }
 
     if (!cart) {
-      return { success: false, error: 'Cart not found', data: null };
+      new Cart({
+        sessionId,
+        userId,
+        items: [],
+        total: 0,
+      });
+      const newCart = await cart.save();
+      return {
+        success: true,
+        error: 'Cart not found, new cart created',
+        data: newCart,
+      };
     }
 
     return { success: true, data: cart };
