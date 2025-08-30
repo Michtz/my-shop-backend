@@ -1,7 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
-import { MulterFile } from '../types/multer';
+import { CustomMulterFile } from '../types/multer';
 
 // Cloudinary Konfiguration
 cloudinary.config({
@@ -18,7 +18,7 @@ export interface CloudinaryResponse {
 }
 
 export const uploadProductImage = async (
-  file: MulterFile,
+  file: CustomMulterFile,
 ): Promise<CloudinaryResponse> => {
   try {
     console.log('📸 Starting image upload:', {

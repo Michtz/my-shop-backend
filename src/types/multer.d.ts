@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 
 // Custom Multer File interface
-export interface MulterFile {
+export interface CustomMulterFile {
   fieldname: string;
   originalname: string;
   encoding: string;
