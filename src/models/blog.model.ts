@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Request } from 'express';
-import { CustomMulterFile } from '../types/multer';
 
 export interface BlogResponse {
   success: boolean;
@@ -62,7 +61,7 @@ export interface BlogRequest extends Omit<Request, 'file'> {
     status?: string;
     [key: string]: any;
   };
-  file?: CustomMulterFile;
+  file?: any;
   user?: {
     id: string;
     email: string;

@@ -1,6 +1,5 @@
 import multer from 'multer';
 import { Request, Response, NextFunction } from 'express';
-import { CustomMulterFile } from '../types/multer';
 
 const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
@@ -8,7 +7,7 @@ const storage = multer.memoryStorage();
 
 const fileFilter = (
   req: Request,
-  file: CustomMulterFile,
+  file: any,
   cb: multer.FileFilterCallback,
 ) => {
   if (allowedMimeTypes.includes(file.mimetype)) {

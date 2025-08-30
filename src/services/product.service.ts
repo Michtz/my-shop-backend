@@ -4,7 +4,6 @@ import {
   ProductResponse,
   ProductFilters,
 } from '../models/product.model';
-import { CustomMulterFile } from '../types/multer';
 import { emitProductStockUpdated } from './socket.service';
 import {
   uploadProductImage as uploadToCloudinary,
@@ -46,7 +45,7 @@ export const getProductById = async (
 
 export const createProduct = async (
   productData: Partial<IProduct>,
-  imageFile?: CustomMulterFile,
+  imageFile?: any,
 ): Promise<ProductResponse> => {
   try {
     const existingProduct = await Product.findOne({ name: productData.name });
@@ -88,7 +87,7 @@ export const createProduct = async (
 export const updateProduct = async (
   productId: string,
   updateData: Partial<IProduct>,
-  imageFile?: CustomMulterFile,
+  imageFile?: any,
 ): Promise<ProductResponse> => {
   try {
     const existingProduct = await Product.findById(productId);

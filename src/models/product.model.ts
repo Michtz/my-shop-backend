@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Request } from 'express';
-import { CustomMulterFile } from '../types/multer';
 
 export interface ProductResponse {
   success: boolean;
@@ -40,7 +39,7 @@ export interface ProductRequest extends Omit<Request, 'file'> {
     data?: string;
     [key: string]: any;
   };
-  file?: CustomMulterFile;
+  file?: any;
 }
 
 export interface IProductDocument extends IProduct, Document {
