@@ -17,6 +17,7 @@ export const getAllProducts = async (
   try {
     const query = { isActive: true, ...filters };
     const products = await Product.find(query);
+    console.log('products', products);
     return { success: true, data: products };
   } catch (error) {
     return {

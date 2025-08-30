@@ -1,13 +1,13 @@
 import { Server } from 'socket.io';
 import { Server as HttpServer } from 'http';
-import { IProductDocument } from '../models/product.model';
+import { IProductDocument, transKey } from '../models/product.model';
 import { ICartDocument } from '../models/cart.model';
 
 let io: Server;
 
 export interface CartReservationData {
   productId: string;
-  productName: string;
+  productName: transKey;
   reservedQuantity: number;
   availableStock: number;
   cartCount: number;
@@ -26,7 +26,7 @@ export interface CartUpdateData {
 
 export interface StockConflictData {
   productId: string;
-  productName: string;
+  productName: transKey;
   requestedQuantity: number;
   availableStock: number;
   conflictType:

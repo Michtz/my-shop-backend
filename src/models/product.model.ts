@@ -75,7 +75,6 @@ const productSchema = new Schema<IProductDocument>(
     name: {
       type: transKeySchema,
       required: [true, 'Product name is required'],
-      trim: true,
     },
     description: {
       type: transKeySchema,

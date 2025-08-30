@@ -9,6 +9,7 @@ export const getAllProducts = async (
 ): Promise<void> => {
   try {
     const result = await ProductService.getAllProducts();
+    console.log('result', result);
     const status = result.success ? 200 : 500;
     res.status(status).json(result);
   } catch (error) {
