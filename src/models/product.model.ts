@@ -14,8 +14,8 @@ export interface ProductFilters {
 }
 
 export interface IProduct {
-  name: string;
-  description: string;
+  name: transKey;
+  description: transKey;
   price: number;
   stockQuantity: number;
   reservedQuantity: number;
@@ -25,13 +25,15 @@ export interface IProduct {
   lastUpdated: Date;
 }
 
+export type transKey = { inv: string; de?: string; en?: string; fr?: string };
+
 export interface ProductRequest extends Omit<Request, 'file'> {
   params: {
     id?: string;
   };
   body: {
-    name?: string;
-    description?: string;
+    name?: transKey;
+    description?: transKey;
     price?: number;
     stockQuantity?: number;
     category?: string;
@@ -46,15 +48,37 @@ export interface IProductDocument extends IProduct, Document {
   availableQuantity?: number; // Virtual field
 }
 
+const transKeySchema = new Schema(
+  {
+    inv: {
+      type: String,
+      required: true,
+    },
+    de: {
+      type: String,
+      required: false,
+    },
+    en: {
+      type: String,
+      required: false,
+    },
+    fr: {
+      type: String,
+      required: false,
+    },
+  },
+  { _id: false },
+);
+
 const productSchema = new Schema<IProductDocument>(
   {
     name: {
-      type: String,
+      type: transKeySchema,
       required: [true, 'Product name is required'],
       trim: true,
     },
     description: {
-      type: String,
+      type: transKeySchema,
       required: [true, 'Product description is required'],
     },
     price: {
