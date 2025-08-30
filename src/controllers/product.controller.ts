@@ -3,6 +3,22 @@ import mongoose from 'mongoose';
 import * as ProductService from '../services/product.service';
 import { ProductRequest } from '../models/product.model';
 
+export const getAllActiveProducts = async (
+  req: any,
+  res: Response,
+): Promise<void> => {
+  try {
+    const result = await ProductService.getAllActiveProducts();
+    console.log('result', result);
+    const status = result.success ? 200 : 500;
+    res.status(status).json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching products',
+    });
+  }
+};
 export const getAllProducts = async (
   req: any,
   res: Response,
@@ -137,45 +153,6 @@ export const updateProduct = async (
     res.status(500).json({
       success: false,
       error: 'Server error while updating product',
-    });
-  }
-};
-
-export const updateStock = async (
-  req: ProductRequest,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const { stockQuantity } = req.body;
-
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid product ID',
-      });
-      return;
-    }
-
-    if (typeof stockQuantity !== 'number') {
-      res.status(400).json({
-        success: false,
-        error: 'Quantity must be a number',
-      });
-      return;
-    }
-
-    const result = await ProductService.updateStock(id, stockQuantity);
-    const status = result.success
-      ? 200
-      : result.error === 'Product not found'
-        ? 404
-        : 500;
-    res.status(status).json(result);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Server error while updating stock',
     });
   }
 };

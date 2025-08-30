@@ -1,6 +1,6 @@
 import { Document, Schema, model } from 'mongoose';
 import { Request } from 'express';
-import { IProductDocument } from './product.model';
+import { IProduct } from './product.model';
 import {
   addressSchema,
   paymentInfoSchema,
@@ -29,7 +29,7 @@ export interface ICartItem {
   quantity: number;
   price: number;
   reservedUntil?: Date; // NEU: Reservierung bis wann
-  product?: IProductDocument;
+  product?: IProduct;
 }
 
 export interface IUserCartInfo {

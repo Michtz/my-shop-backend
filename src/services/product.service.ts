@@ -4,20 +4,35 @@ import {
   ProductResponse,
   ProductFilters,
 } from '../models/product.model';
-import { emitProductStockUpdated } from './socket.service';
 import {
   uploadProductImage as uploadToCloudinary,
   deleteProductImage,
   extractPublicId,
 } from './cloudinary.service';
+import { emitProductsUpdated } from './socket.service';
 
 export const getAllProducts = async (
   filters: ProductFilters = {},
 ): Promise<ProductResponse> => {
   try {
+    const query = { ...filters };
+    const products = await Product.find(query);
+
+    return { success: true, data: products };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+};
+export const getAllActiveProducts = async (
+  filters: ProductFilters = {},
+): Promise<ProductResponse> => {
+  try {
     const query = { isActive: true, ...filters };
     const products = await Product.find(query);
-    console.log('products', products);
+
     return { success: true, data: products };
   } catch (error) {
     return {
@@ -68,14 +83,9 @@ export const createProduct = async (
       productData.imageUrl = uploadResult.url;
     }
 
-    const product = await Product.create(productData);
+    const product: IProduct = await Product.create(productData);
 
-    emitProductStockUpdated(product);
-
-    if (product.stockQuantity <= 5) {
-      emitProductStockUpdated(product);
-    }
-
+    emitProductsUpdated([]);
     return { success: true, data: product };
   } catch (error) {
     return {
@@ -124,11 +134,7 @@ export const updateProduct = async (
       return { success: false, error: 'Product not found' };
     }
 
-    emitProductStockUpdated(product);
-
-    if (product.stockQuantity <= 5) {
-      emitProductStockUpdated(product);
-    }
+    emitProductsUpdated([productId]);
 
     return { success: true, data: product };
   } catch (error) {
@@ -151,23 +157,12 @@ export const updateStock = async (
     if (quantity < 0) {
       return { success: false, error: 'Quantity cannot be negative' };
     }
-    const previousStock = product.stockQuantity;
 
     product.stockQuantity = quantity;
     product.lastUpdated = new Date();
     await product.save();
 
-    emitProductStockUpdated(product);
-
-    if (product.stockQuantity <= 5) {
-      emitProductStockUpdated(product);
-    }
-
-    if (previousStock > 5 && product.stockQuantity <= 5) {
-      console.log(
-        `Product ${product.name} is now low in stock: ${product.stockQuantity} remaining`,
-      );
-    }
+    emitProductsUpdated([productId]);
 
     return { success: true, data: product };
   } catch (error) {
@@ -205,7 +200,7 @@ export const deleteProduct = async (
       return { success: false, error: 'Product not found' };
     }
 
-    emitProductStockUpdated(product);
+    emitProductsUpdated([]);
     return { success: true, data: product };
   } catch (error) {
     return {

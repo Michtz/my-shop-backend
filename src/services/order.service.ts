@@ -2,7 +2,7 @@ import { Order, OrderResponse } from '../models/order.model';
 import * as CartService from './cart.service';
 import * as ProductService from './product.service';
 import { Cart } from '../models/cart.model';
-import { releaseCartItemReservation } from './reservation.service';
+import { emitProductsUpdated } from './socket.service';
 
 export const createOrderFromCart = async (
   sessionId: string,
@@ -51,6 +51,7 @@ export const createOrderFromCart = async (
     await order.save();
     await order.populate('items.productId');
 
+    const updatedProductIds: string[] = [];
     // update product quantity, release socked reservation
     for (const item of cart.items) {
       const product = await ProductService.getProductById(item.productId.id);
@@ -61,12 +62,14 @@ export const createOrderFromCart = async (
 
       await ProductService.updateStock(item.productId.id, newQuantity);
 
-      await releaseCartItemReservation(
-        sessionId,
-        item.productId.id,
-        item.quantity,
-      );
+      updatedProductIds.push(item.productId.id);
+
+      // Delete cart
+      await Cart.findOneAndDelete({ sessionId });
     }
+
+    // Emit socket event after successful order
+    emitProductsUpdated(updatedProductIds);
 
     await Cart.findOneAndDelete({ sessionId });
     return {
@@ -155,6 +158,7 @@ export const getAllOrders = async (): Promise<OrderResponse> => {
   }
 };
 
+// Todo: implement user order ui when time
 export const getUserOrders = async (userId: string): Promise<OrderResponse> => {
   try {
     const orders = await Order.find({ userId })

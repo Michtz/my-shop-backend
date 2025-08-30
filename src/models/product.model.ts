@@ -3,7 +3,7 @@ import { Request } from 'express';
 
 export interface ProductResponse {
   success: boolean;
-  data?: IProductDocument | IProductDocument[] | null;
+  data?: IProduct | IProduct[] | null;
   error?: string;
 }
 
@@ -13,12 +13,11 @@ export interface ProductFilters {
   [key: string]: any;
 }
 
-export interface IProduct {
+export interface IProduct extends Document {
   name: transKey;
   description: transKey;
   price: number;
   stockQuantity: number;
-  reservedQuantity: number;
   category: string;
   isActive: boolean;
   imageUrl?: string;
@@ -44,10 +43,6 @@ export interface ProductRequest extends Omit<Request, 'file'> {
   file?: any;
 }
 
-export interface IProductDocument extends IProduct, Document {
-  availableQuantity?: number; // Virtual field
-}
-
 const transKeySchema = new Schema(
   {
     inv: {
@@ -70,7 +65,7 @@ const transKeySchema = new Schema(
   { _id: false },
 );
 
-const productSchema = new Schema<IProductDocument>(
+const productSchema = new Schema<IProduct>(
   {
     name: {
       type: transKeySchema,
@@ -90,12 +85,6 @@ const productSchema = new Schema<IProductDocument>(
       required: [true, 'Stock quantity is required'],
       min: [0, 'Stock quantity cannot be negative'],
       default: 0,
-    },
-    reservedQuantity: {
-      type: Number,
-      min: [0, 'Reserved quantity cannot be negative'],
-      default: 0,
-      index: true, // Index for Performance
     },
     category: {
       type: String,
@@ -119,16 +108,7 @@ const productSchema = new Schema<IProductDocument>(
   },
 );
 
-productSchema.virtual('availableQuantity').get(function (
-  this: IProductDocument,
-) {
-  return this.stockQuantity - this.reservedQuantity;
-});
-
 productSchema.set('toJSON', { virtuals: true });
 productSchema.set('toObject', { virtuals: true });
 
-export const Product = mongoose.model<IProductDocument>(
-  'Product',
-  productSchema,
-);
+export const Product = mongoose.model<IProduct>('Product', productSchema);

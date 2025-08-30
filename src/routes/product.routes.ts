@@ -1,10 +1,10 @@
 import { Router, Response, Request } from 'express';
 import {
+  getAllActiveProducts,
   getAllProducts,
   getProductById,
   createProduct,
   updateProduct,
-  updateStock,
   deleteProduct,
 } from '../controllers/product.controller';
 import {
@@ -16,7 +16,7 @@ const router = Router();
 
 router
   .route('/')
-  .get((req: Request, res: Response) => getAllProducts(req, res))
+  .get((req: Request, res: Response) => getAllActiveProducts(req, res))
   .post(uploadProductImage, handleUploadError, (req: Request, res: Response) =>
     createProduct(req, res),
   );
@@ -30,7 +30,6 @@ router
   .delete((req: Request, res: Response) => deleteProduct(req, res));
 
 router
-  .route('/:id/stock')
-  .patch((req: Request, res: Response) => updateStock(req, res));
-
+  .route('/all')
+  .get((req: Request, res: Response) => getAllProducts(req, res));
 export default router;
