@@ -3,22 +3,6 @@ import mongoose from 'mongoose';
 import * as ProductService from '../services/product.service';
 import { ProductRequest } from '../models/product.model';
 
-export const getAllActiveProducts = async (
-  req: any,
-  res: Response,
-): Promise<void> => {
-  try {
-    const result = await ProductService.getAllActiveProducts();
-    console.log('result', result);
-    const status = result.success ? 200 : 500;
-    res.status(status).json(result);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'Server error while fetching products',
-    });
-  }
-};
 export const getAllProducts = async (
   req: any,
   res: Response,

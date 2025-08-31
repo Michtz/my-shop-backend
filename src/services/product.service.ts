@@ -26,21 +26,6 @@ export const getAllProducts = async (
     };
   }
 };
-export const getAllActiveProducts = async (
-  filters: ProductFilters = {},
-): Promise<ProductResponse> => {
-  try {
-    const query = { isActive: true, ...filters };
-    const products = await Product.find(query);
-
-    return { success: true, data: products };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-};
 
 export const getProductById = async (
   productId: string,

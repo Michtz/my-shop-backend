@@ -1,6 +1,5 @@
 import { Router, Response, Request } from 'express';
 import {
-  getAllActiveProducts,
   getAllProducts,
   getProductById,
   createProduct,
@@ -16,7 +15,7 @@ const router = Router();
 
 router
   .route('/')
-  .get((req: Request, res: Response) => getAllActiveProducts(req, res))
+  .get((req: Request, res: Response) => getAllProducts(req, res))
   .post(uploadProductImage, handleUploadError, (req: Request, res: Response) =>
     createProduct(req, res),
   );
