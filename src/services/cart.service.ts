@@ -7,6 +7,7 @@ import {
 import mongoose from 'mongoose';
 import { Product } from '../models/product.model';
 import { IUser, User } from '../models/user.model';
+import { emitCartUpdated } from './socket.service';
 
 const RESERVATION_DURATION = 20 * 60 * 1000; //  20min
 
@@ -18,7 +19,6 @@ export const createCart = async (
     const existingCart = await Cart.findOne({
       $or: [{ sessionId }, ...(userId ? [{ userId }] : [])],
     });
-
     if (existingCart) {
       const populatedCart = await existingCart.populate('items.productId');
       return {
@@ -37,6 +37,8 @@ export const createCart = async (
 
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
+    emitCartUpdated(sessionId);
+
     return { success: true, data: populatedCart };
   } catch (error) {
     return {
@@ -146,6 +148,7 @@ export const addToCart = async (
     }
 
     const populatedCart = await cart.populate('items.productId');
+    emitCartUpdated(sessionId);
     return {
       success: true,
       data: populatedCart,
@@ -178,6 +181,7 @@ export const removeFromCart = async (
 
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
+    emitCartUpdated(sessionId);
     return { success: true, data: populatedCart };
   } catch (error) {
     return {
@@ -226,6 +230,7 @@ export const updateCartItem = async (
     cart.calculateTotal?.();
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
+    emitCartUpdated(sessionId);
     return { success: true, data: populatedCart };
   } catch (error) {
     return {
@@ -285,6 +290,7 @@ export const replaceCartItems = async (
     cart.calculateTotal();
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
+    emitCartUpdated(sessionId);
     return { success: true, data: populatedCart };
   } catch (error) {
     return {
@@ -450,6 +456,7 @@ export const updateCart = async (
     cart.calculateTotal?.();
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
+    emitCartUpdated(sessionId);
     return { success: true, data: populatedCart };
   } catch (error) {
     return {

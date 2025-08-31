@@ -19,7 +19,10 @@ export const initializeSocketIO = (httpServer: HttpServer): void => {
 
   io.on('connection', (socket) => {
     console.log(`Client connected: ${socket.id}`);
-
+    socket.on('join_session', (sessionId: string) => {
+      joinSessionRoom(socket, sessionId);
+      console.log(`Client session conected: ${socket.id} ${sessionId}`);
+    });
     // Auto-join shop updates room
     socket.join('shop_updates');
 
@@ -48,4 +51,22 @@ export const emitProductsUpdated = (updatedProductIds?: string[]): void => {
 // Utility function to get io instance
 export const getSocketIO = (): Server | undefined => {
   return io;
+};
+
+export const joinSessionRoom = (socket: any, sessionId: string): void => {
+  const roomName = `session_${sessionId}`;
+  socket.join(roomName);
+  console.log(`Client ${socket.id} joined session room: ${roomName}`);
+};
+
+export const emitCartUpdated = (sessionId: string): void => {
+  if (!io) {
+    console.warn('Socket.io not initialized');
+    return;
+  }
+
+  const roomName = `session_${sessionId}`;
+  io.to(roomName).emit('cart_updated', {
+    timestamp: new Date().toISOString(),
+  });
 };
