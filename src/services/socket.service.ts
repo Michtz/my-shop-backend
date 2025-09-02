@@ -21,8 +21,21 @@ export const initializeSocketIO = (httpServer: HttpServer): void => {
     console.log(`Client connected: ${socket.id}`);
     socket.on('join_session', (sessionId: string) => {
       joinSessionRoom(socket, sessionId);
-      console.log(`Client session conected: ${socket.id} ${sessionId}`);
+      console.log(`Client session connected: ${socket.id} ${sessionId}`);
     });
+
+    socket.on('user_login', (userId: string) => {
+      joinUserRoom(socket, userId);
+      console.log(`User logged in and joined room: ${socket.id} ${userId}`);
+      socket.emit('user_room_joined', { userId });
+    });
+
+    socket.on('user_logout', (userId: string) => {
+      const roomName = `user_${userId}`;
+      socket.leave(roomName);
+      console.log(`User ${userId} left room: ${roomName}`);
+    });
+
     // Auto-join shop updates room
     socket.join('shop_updates');
 
@@ -59,13 +72,41 @@ export const joinSessionRoom = (socket: any, sessionId: string): void => {
   console.log(`Client ${socket.id} joined session room: ${roomName}`);
 };
 
-export const emitCartUpdated = (sessionId: string): void => {
+export const joinUserRoom = (socket: any, userId: string): void => {
+  const roomName = `user_${userId}`;
+  socket.join(roomName);
+  console.log(`Client ${socket.id} joined user room: ${roomName}`);
+};
+
+export const emitCartUpdated = (
+  sessionId: string,
+  userId: string | undefined,
+): void => {
   if (!io) {
     console.warn('Socket.io not initialized');
     return;
   }
 
-  const roomName = `session_${sessionId}`;
+  if (userId) {
+    const roomName = `user_${userId}`;
+    io.to(roomName).emit('cart_updated', {
+      timestamp: new Date().toISOString(),
+    });
+  } else {
+    const roomName = `session_${sessionId}`;
+    io.to(roomName).emit('cart_updated', {
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+export const emitToUser = (userId: string): void => {
+  if (!io) {
+    console.warn('Socket.io not initialized');
+    return;
+  }
+
+  const roomName = `user_${userId}`;
   io.to(roomName).emit('cart_updated', {
     timestamp: new Date().toISOString(),
   });

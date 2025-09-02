@@ -148,30 +148,35 @@ const userCartInfoSchema = new Schema<IUserCartInfo>({
   guestInfo: guestInfoSchema,
 });
 
-const cartSchema = new Schema<ICartDocument>({
-  sessionId: {
-    type: String,
-    required: true,
-    index: true,
+const cartSchema = new Schema<ICartDocument>(
+  {
+    sessionId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    userId: {
+      type: String,
+      required: false,
+      index: true,
+    },
+    userInfo: userCartInfoSchema,
+    items: [cartItemSchema],
+    total: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+      expires: 7 * 24 * 60 * 60, // 7 days
+    },
   },
-  userId: {
-    type: String,
-    required: false,
-    index: true,
+  {
+    versionKey: false, // ← VERSIONING DEAKTIVIERT - keine __v Felder mehr
   },
-  userInfo: userCartInfoSchema,
-  items: [cartItemSchema],
-  total: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    expires: 7 * 24 * 60 * 60, // 7 days
-  },
-});
+);
 
 cartSchema.methods.calculateTotal = function (this: ICartDocument): number {
   this.total = this.items.reduce((sum, item) => {
