@@ -11,8 +11,6 @@ import { Product } from '../models/product.model';
 import { IUser, User } from '../models/user.model';
 import { emitCartUpdated } from './socket.service';
 
-const RESERVATION_DURATION = 20 * 60 * 1000; //  20min
-
 export const createCart = async (
   data: CartCreateData,
 ): Promise<CartResponse> => {
@@ -49,78 +47,12 @@ export const createCart = async (
     };
   }
 };
-//
-// // 67fff5e6f9efaf23deb69622 user id
-// export const getCart = async (
-//   sessionId: string,
-//   userId?: string,
-// ): Promise<CartResponse> => {
-//   try {
-//     console.log(
-//       'this is the start of get Cart',
-//       'userId',
-//       userId,
-//       'sessionId',
-//       sessionId,
-//     );
-//     let cart = await Cart.findOne({ sessionId }).populate('items.productId');
-//     const userCart = await Cart.findOne({ userId }).populate('items.productId');
-//     console.log('cart testsssss', userCart, 'cart', cart, 'userid', userId);
-//     if (!userCart && cart) {
-//       cart.userId = userId || 'test user id';
-//       await cart.save();
-//     }
-//
-//     if (userCart && cart) {
-//       console.log('cart in tesssst ', userCart);
-//       const carts = [cart, userCart];
-//       console.log('cart 22222', carts);
-//       const mergedCartItems = mergeCartItems(carts);
-//       console.log('mergedCartItemssertdghsdfgsdfg', mergedCartItems);
-//       cart.items = mergedCartItems;
-//       await cart.save();
-//
-//       console.log('mergedCartItems in getcart', mergedCartItems);
-//     }
-//     if (!cart && userCart) {
-//       cart = userCart;
-//       await cart.save();
-//     }
-//     console.log('cart', cart);
-//     console.log('chunts bis hie? ');
-//     if (!cart) {
-//       cart = new Cart({
-//         sessionId,
-//         userId,
-//         items: [],
-//         total: 0,
-//       });
-//       const newCart = await cart.save();
-//       console.log('new cart', newCart);
-//       return {
-//         success: true,
-//         error: 'Cart not found, new cart created',
-//         data: newCart,
-//       };
-//     }
-//     return { success: true, data: cart };
-//   } catch (error) {
-//     return {
-//       success: false,
-//       error: error instanceof Error ? error.message : 'Unknown error',
-//     };
-//   }
-// };
 
-/**
- * Holt oder erstellt einen Warenkorb basierend auf sessionId und/oder userId
- */
 export const getCart = async (
   sessionId: string,
   userId?: string,
 ): Promise<CartResponse> => {
   try {
-    // Validierung
     if (!sessionId) {
       return {
         success: false,
@@ -128,55 +60,79 @@ export const getCart = async (
       };
     }
 
-    // Suche nach beiden Carts
-    let sessionCart = await Cart.findOne({ sessionId }).populate(
-      'items.productId',
-    );
-    let userCart = userId
-      ? await Cart.findOne({ userId }).populate('items.productId')
-      : null;
+    const [sessionCart, userCart] = await Promise.all([
+      Cart.findOne({ sessionId }),
+      userId ? Cart.findOne({ userId }) : null,
+    ]);
 
     let finalCart: ICartDocument | null;
 
-    // Fall 1: Beide Carts wurden gefunden
-    if (sessionCart && userCart) {
-      // Merge sessionCart items in userCart
-      const mergedCart = await mergeCarts(userCart, sessionCart);
+    const areDifferentCarts =
+      sessionCart &&
+      userCart &&
+      sessionCart._id.toString() !== userCart._id.toString();
 
-      // Lösche den sessionCart nach dem Merge
+    // if both cart => merge and delete
+    if (areDifferentCarts && userId) {
+      const sessionItemsMap = new Map(
+        sessionCart.items.map((item) => [item.productId.toString(), item]),
+      );
+
+      const userItemsMap = new Map(
+        userCart.items.map((item) => [item.productId.toString(), item]),
+      );
+
+      const mergedItems: ICartItem[] = [];
+
+      for (const [productId, item] of sessionItemsMap) {
+        mergedItems.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        });
+      }
+
+      // merge items
+      for (const [productId, item] of userItemsMap) {
+        if (!sessionItemsMap.has(productId)) {
+          mergedItems.push({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          });
+        }
+      }
+
+      userCart.items = mergedItems;
+      userCart.sessionId = sessionId; // Übernehme sessionId
+
+      // only delet if diffrent carts .... achtung nid lösche :D oder ömu nid wieder...
+      await userCart.save();
       await Cart.deleteOne({ _id: sessionCart._id });
 
-      finalCart = mergedCart;
+      finalCart = await Cart.findById(userCart._id).populate('items.productId');
     }
-    // Fall 2: Nur userCart gefunden
-    else if (userCart) {
-      // Ergänze sessionId falls nicht vorhanden
-      if (!userCart.sessionId) {
-        userCart.sessionId = sessionId;
-        await userCart.save();
-        // Hole aktualisierten Cart
-        finalCart = await Cart.findById(userCart._id).populate(
-          'items.productId',
-        );
-      } else {
-        finalCart = userCart;
-      }
+    // session cart and user cart are the same => return
+    else if (sessionCart && userCart && !areDifferentCarts) {
+      finalCart = await Cart.findById(userCart._id).populate('items.productId');
     }
-    // Fall 3: Nur sessionCart gefunden
-    else if (sessionCart) {
-      // Ergänze userId falls vorhanden und nicht im Cart
-      if (userId && !sessionCart.userId) {
-        sessionCart.userId = userId;
-        await sessionCart.save();
-        // Hole aktualisierten Cart
-        finalCart = await Cart.findById(sessionCart._id).populate(
-          'items.productId',
-        );
-      } else {
-        finalCart = sessionCart;
-      }
+
+    // to update user id if only session cart found
+    else if (sessionCart && userId && !userCart) {
+      sessionCart.userId = userId;
+      await sessionCart.save();
+
+      finalCart = await Cart.findById(sessionCart._id).populate(
+        'items.productId',
+      );
+    } else if (userCart && !sessionCart) {
+      finalCart = await Cart.findById(userCart._id).populate('items.productId');
+    } else if (sessionCart) {
+      finalCart = await Cart.findById(sessionCart._id).populate(
+        'items.productId',
+      );
     }
-    // Fall 4: Kein Cart gefunden - erstelle neuen
+    // if no cart create new
     else {
       const newCart = new Cart({
         sessionId,
@@ -186,11 +142,9 @@ export const getCart = async (
       });
 
       await newCart.save();
-      // Populate für konsistente Rückgabe
       finalCart = await Cart.findById(newCart._id).populate('items.productId');
     }
 
-    // Zusätzliche Sicherheitsprüfung
     if (!finalCart) {
       return {
         success: false,
@@ -213,60 +167,6 @@ export const getCart = async (
   }
 };
 
-/**
- * Merged sessionCart items in userCart
- * Bei Duplikaten wird die Quantity aus userCart beibehalten
- */
-const mergeCarts = async (
-  userCart: ICartDocument,
-  sessionCart: ICartDocument,
-): Promise<ICartDocument | null> => {
-  try {
-    // Erstelle eine Map der userCart items für schnellen Zugriff
-    const userCartItemsMap = new Map<string, ICartItem>();
-
-    userCart.items.forEach((item) => {
-      const productId = item.productId._id
-        ? item.productId._id.toString()
-        : item.productId.toString();
-      userCartItemsMap.set(productId, item);
-    });
-
-    // Füge items aus sessionCart hinzu, die nicht in userCart sind
-    sessionCart.items.forEach((sessionItem) => {
-      const productId = sessionItem.productId._id
-        ? sessionItem.productId._id.toString()
-        : sessionItem.productId.toString();
-
-      // Wenn das Produkt nicht im userCart ist, füge es hinzu
-      if (!userCartItemsMap.has(productId)) {
-        userCart.items.push({
-          productId: sessionItem.productId,
-          quantity: sessionItem.quantity,
-          price: sessionItem.price,
-          reservedUntil: sessionItem.reservedUntil,
-        });
-      }
-      // Bei Duplikaten behalten wir die Quantity vom userCart (passiert automatisch)
-    });
-
-    // Aktualisiere den Total
-    userCart.calculateTotal();
-
-    // Speichere den aktualisierten userCart
-    await userCart.save();
-
-    // Hole den frisch gespeicherten Cart aus der DB und populate
-    return await Cart.findById(userCart._id).populate('items.productId');
-  } catch (error) {
-    console.error('Error merging carts:', error);
-    throw error;
-  }
-};
-
-/**
- * Fügt ein Produkt zum Warenkorb hinzu oder setzt die neue Menge
- */
 export const addToCart = async (
   sessionId: string,
   userId: string | undefined,
@@ -274,24 +174,41 @@ export const addToCart = async (
   quantity: number,
 ): Promise<CartResponse> => {
   try {
-    // Hole oder erstelle Cart
-    const cartResponse = await getCart(sessionId, userId);
-
-    if (!cartResponse.success || !cartResponse.data) {
-      return cartResponse;
-    }
-
-    // Hole frischen Cart aus der DB um sicherzustellen, dass wir die aktuelle Version haben
-    const freshCart = await Cart.findById(cartResponse.data._id);
-
-    if (!freshCart) {
+    if (!sessionId) {
       return {
         success: false,
-        error: 'Cart not found after retrieval',
+        error: 'SessionId is required',
       };
     }
 
-    // Hole Produktinformationen für den Preis
+    let cart: ICartDocument | null = null;
+
+    // search locig for cart
+    if (userId) {
+      // Erst mit userId suchen
+      cart = await Cart.findOne({ userId });
+
+      if (!cart) {
+        cart = await Cart.findOne({ sessionId });
+
+        if (cart) {
+          cart.userId = userId;
+        }
+      }
+    } else {
+      // search only with sessionid
+      cart = await Cart.findOne({ sessionId });
+    }
+
+    if (!cart) {
+      cart = new Cart({
+        sessionId,
+        userId: userId || undefined,
+        items: [],
+        total: 0,
+      });
+    }
+
     const product = await (
       await import('../models/product.model')
     ).Product.findById(productId);
@@ -303,33 +220,30 @@ export const addToCart = async (
       };
     }
 
-    // Prüfe ob Produkt bereits im Cart ist
-    const existingItemIndex = freshCart.items.findIndex(
+    // check if product in cart
+    const existingItemIndex = cart.items.findIndex(
       (item) => item.productId?.toString() === productId,
     );
 
     if (existingItemIndex > -1) {
-      // Setze die neue Quantity (nicht addieren!)
-      freshCart.items[existingItemIndex].quantity = quantity;
-      freshCart.items[existingItemIndex].price = product.price;
+      // use session quantity like galaxus :D
+      cart.items[existingItemIndex].quantity = quantity;
+      cart.items[existingItemIndex].price = product.price;
     } else {
-      // Füge neues Item hinzu
-      freshCart.items.push({
+      cart.items.push({
         productId,
         quantity,
         price: product.price,
-        reservedUntil: new Date(Date.now() + 30 * 60 * 1000), // 30 Minuten Reservierung
       } as ICartItem);
     }
 
-    // Berechne Total neu und speichere
-    freshCart.calculateTotal();
-    await freshCart.save();
+    cart.calculateTotal();
+    await cart.save();
 
-    // Populate und return
-    const updatedCart = await Cart.findById(freshCart._id).populate(
+    const updatedCart = await Cart.findById(cart._id).populate(
       'items.productId',
     );
+
     emitCartUpdated(sessionId, userId);
 
     return {
@@ -345,137 +259,61 @@ export const addToCart = async (
   }
 };
 
-//
-// export const addToCart = async (
-//   sessionId: string,
-//   userId: string | undefined,
-//   productId: string,
-//   quantity: number,
-// ): Promise<CartResponse> => {
-//   try {
-//     let cart = await Cart.findOne({ sessionId }).populate('items.productId');
-//     const userCart = await Cart.findOne({ userId }).populate('items.productId');
-//     console.log(
-//       'cart test in addtocart',
-//       userCart,
-//       'cart',
-//       cart,
-//       'userid',
-//       userId,
-//     );
-//
-//     // Cart merging logic
-//     if (!cart && !userCart) {
-//       // Case 1: Neither cart exists -> create new cart
-//       console.log('Creating new cart - no existing carts found');
-//       cart = new Cart({
-//         sessionId,
-//         userId,
-//         items: [],
-//         total: 0,
-//       });
-//     } else if (!cart && userCart) {
-//       // Case 2: Only user cart exists -> use user cart and update sessionId
-//       cart = userCart;
-//       cart.sessionId = sessionId;
-//       await cart.save();
-//       console.log('Using user cart, updated sessionId');
-//     } else if (cart && !userCart) {
-//       // Case 3: Only session cart exists -> add userId to session cart
-//       if (userId) {
-//         cart.userId = userId;
-//         await cart.save();
-//       }
-//       console.log('Using session cart, added userId');
-//     } else if (cart && userCart) {
-//       // Case 4: Both exist -> merge items into session cart and delete user cart
-//       const mergedCartItems = mergeCartItems([cart, userCart]);
-//       cart.items = mergedCartItems;
-//       cart.userId = userId;
-//       await cart.save();
-//       await Cart.deleteOne({ _id: userCart._id });
-//       console.log('Merged both carts, deleted user cart');
-//     }
-//     const product = await Product.findById(productId);
-//
-//     if (!product) {
-//       return {
-//         success: false,
-//         error: 'Product not found',
-//       };
-//     }
-//
-//     if (product.stockQuantity < quantity) {
-//       return {
-//         success: false,
-//         error: `Not enough stock available. Available: ${product.stockQuantity}, Requested: ${quantity}`,
-//       };
-//     }
-//
-//     // At this point cart should always exist from the logic above
-//     if (userId && !cart.userId) cart.userId = userId;
-//
-//     const existingItemIndex = cart.items.findIndex(
-//       (item) => item.productId.toString() === productId,
-//     );
-//
-//     if (existingItemIndex > -1) {
-//       cart.items[existingItemIndex].quantity += quantity;
-//     } else {
-//       cart.items.push({
-//         productId,
-//         quantity,
-//         price: product.price,
-//       });
-//     }
-//
-//     cart.calculateTotal();
-//     await cart.save();
-//
-//     const populatedCart = await cart.populate('items.productId');
-//     emitCartUpdated(sessionId);
-//     return {
-//       success: true,
-//       data: populatedCart,
-//     };
-//   } catch (error) {
-//     console.error('Error adding to cart:', error);
-//     return {
-//       success: false,
-//       error: error instanceof Error ? error.message : 'Unknown error',
-//     };
-//   }
-// };
-
 export const removeFromCart = async (
   sessionId: string,
+  userId: string | undefined,
   productId: string,
-  userId?: string,
 ): Promise<CartResponse> => {
   try {
-    const cartResponse = await getCart(sessionId, userId);
+    if (!sessionId) {
+      return {
+        success: false,
+        error: 'SessionId is required',
+      };
+    }
+    let cart: ICartDocument | null = null;
 
-    if (!cartResponse.success || !cartResponse.data) {
-      return cartResponse;
+    if (userId) {
+      cart = await Cart.findOne({ userId });
+      if (!cart) {
+        cart = await Cart.findOne({ sessionId });
+
+        if (cart) {
+          cart.userId = userId;
+        }
+      }
+    } else {
+      cart = await Cart.findOne({ sessionId });
     }
 
-    const cart = cartResponse.data;
+    if (!cart) {
+      return {
+        success: false,
+        error: 'Cart not found',
+      };
+    }
 
-    // Filtere das Produkt aus den Items
+    const originalLength = cart.items.length;
     cart.items = cart.items.filter(
-      (item) =>
-        item.productId._id?.toString() !== productId &&
-        item.productId.toString() !== productId,
+      (item) => item.productId?.toString() !== productId,
     );
 
-    // Berechne Total neu und speichere
+    // check if item is removed correctly
+    if (cart.items.length === originalLength) {
+      return {
+        success: false,
+        error: 'Product not found in cart',
+      };
+    }
+
     cart.calculateTotal();
     await cart.save();
 
-    // Populate und return
     const updatedCart = await Cart.findById(cart._id).populate(
       'items.productId',
     );
+
+    emitCartUpdated(sessionId, userId);
 
     return {
       success: true,
@@ -525,7 +363,6 @@ export const updateCartItem = async (
 
     item.quantity = quantity;
     item.price = product.price;
-    item.reservedUntil = new Date(Date.now() + RESERVATION_DURATION); // Timer reset
     cart.calculateTotal?.();
     await cart.save();
     const populatedCart = await cart.populate('items.productId');
@@ -581,7 +418,6 @@ export const replaceCartItems = async (
         productId: item.productId,
         quantity: item.quantity,
         price: product.price,
-        reservedUntil: new Date(Date.now() + RESERVATION_DURATION),
       });
     }
 

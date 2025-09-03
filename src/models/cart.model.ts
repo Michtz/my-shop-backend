@@ -28,7 +28,6 @@ export interface ICartItem {
   productId: string | Schema.Types.ObjectId | any;
   quantity: number;
   price: number;
-  reservedUntil?: Date; // NEU: Reservierung bis wann
   product?: IProduct;
 }
 
@@ -102,10 +101,6 @@ const cartItemSchema = new Schema<ICartItem>({
     required: false,
     min: [0, 'Price cannot be negative'],
   },
-  reservedUntil: {
-    type: Date,
-    required: false,
-  },
 });
 
 const guestInfoSchema = new Schema<IGuestInfo>({
@@ -174,7 +169,7 @@ const cartSchema = new Schema<ICartDocument>(
     },
   },
   {
-    versionKey: false, // ← VERSIONING DEAKTIVIERT - keine __v Felder mehr
+    versionKey: false,
   },
 );
 
@@ -209,6 +204,5 @@ cartSchema.set('toJSON', {
 });
 
 cartSchema.index({ sessionId: 1, userId: 1 });
-cartSchema.index({ 'items.reservedUntil': 1 });
 
 export const Cart = model<ICartDocument>('Cart', cartSchema);

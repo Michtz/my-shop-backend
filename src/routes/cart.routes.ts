@@ -47,7 +47,8 @@ router
 router
   .route('/:sessionId/:userId')
   .get((req: CartRequest, res: Response) => getCart(req, res))
-  .put((req: CartRequest, res: Response) => addToCart(req, res));
+  .put((req: CartRequest, res: Response) => addToCart(req, res))
+  .delete((req: CartRequest, res: Response) => removeFromCart(req, res)); // Todo: fix routing and pass props in body to simplefy if time
 
 router // remove old
   .route('/:sessionId')

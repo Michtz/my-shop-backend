@@ -119,6 +119,7 @@ export const removeFromCart = async (
 ): Promise<void> => {
   try {
     const sessionId = req.params.sessionId;
+    const userId = req.params.userId;
 
     if (!req.body.items || req.body.items.length === 0) {
       res.status(400).json({
@@ -140,7 +141,11 @@ export const removeFromCart = async (
         return;
       }
 
-      const cart = await CartService.removeFromCart(sessionId, productId);
+      const cart = await CartService.removeFromCart(
+        sessionId,
+        productId,
+        userId,
+      );
       if (!cart.success) {
         res.status(400).json(cart);
         return;
