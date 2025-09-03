@@ -181,7 +181,7 @@ export const addToCart = async (
       };
     }
 
-    let cart: ICartDocument | null = null;
+    let cart: ICartDocument | null;
 
     // search locig for cart
     if (userId) {
@@ -258,11 +258,10 @@ export const addToCart = async (
     };
   }
 };
-
 export const removeFromCart = async (
   sessionId: string,
-  userId: string | undefined,
   productId: string,
+  userId: string | undefined,
 ): Promise<CartResponse> => {
   try {
     if (!sessionId) {
@@ -271,13 +270,13 @@ export const removeFromCart = async (
         error: 'SessionId is required',
       };
     }
-    let cart: ICartDocument | null = null;
+
+    let cart: ICartDocument | null;
 
     if (userId) {
       cart = await Cart.findOne({ userId });
       if (!cart) {
         cart = await Cart.findOne({ sessionId });
-
         if (cart) {
           cart.userId = userId;
         }
@@ -294,11 +293,12 @@ export const removeFromCart = async (
     }
 
     const originalLength = cart.items.length;
-    cart.items = cart.items.filter(
-      (item) => item.productId?.toString() !== productId,
-    );
+    cart.items = cart.items.filter((item) => {
+      const itemProductId = item.productId.toString();
+      return itemProductId !== productId;
+    });
 
-    // check if item is removed correctly
+    // Check if item was removed
     if (cart.items.length === originalLength) {
       return {
         success: false,
