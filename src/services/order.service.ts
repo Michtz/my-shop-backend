@@ -2,7 +2,7 @@ import { Order, OrderResponse } from '../models/order.model';
 import * as CartService from './cart.service';
 import * as ProductService from './product.service';
 import { Cart } from '../models/cart.model';
-import { emitProductsUpdated } from './socket.service';
+import { emitCartUpdated, emitProductsUpdated } from './socket.service';
 
 export const createOrderFromCart = async (
   sessionId: string,
@@ -11,6 +11,8 @@ export const createOrderFromCart = async (
 ): Promise<OrderResponse> => {
   try {
     const cartResult = await CartService.getCart(sessionId);
+    const userId: string = cartResult.data.userId;
+
     if (!cartResult.success || !cartResult.data) {
       return {
         success: false,
@@ -68,8 +70,8 @@ export const createOrderFromCart = async (
       await Cart.findOneAndDelete({ sessionId });
     }
 
-    // Emit socket event after successful order
     emitProductsUpdated(updatedProductIds);
+    emitCartUpdated(sessionId, userId); // to reset the cart if open in other window
 
     await Cart.findOneAndDelete({ sessionId });
     return {

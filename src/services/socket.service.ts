@@ -91,11 +91,14 @@ export const emitCartUpdated = (
     const roomName = `user_${userId}`;
     io.to(roomName).emit('cart_updated', {
       timestamp: new Date().toISOString(),
+      sessionId,
+      userId,
     });
   } else {
     const roomName = `session_${sessionId}`;
     io.to(roomName).emit('cart_updated', {
       timestamp: new Date().toISOString(),
+      sessionId,
     });
   }
 };

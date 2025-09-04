@@ -51,7 +51,7 @@ router
     updateUserController(req, res),
   );
 
-router // Todo: implement admin user ui when enough time
+router
   .route('/admin/users')
   .get(
     authenticate,

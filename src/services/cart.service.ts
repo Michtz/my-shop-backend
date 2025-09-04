@@ -142,6 +142,7 @@ export const getCart = async (
       });
 
       await newCart.save();
+      emitCartUpdated(sessionId, userId);
       finalCart = await Cart.findById(newCart._id).populate('items.productId');
     }
 
@@ -151,8 +152,6 @@ export const getCart = async (
         error: 'Failed to retrieve or create cart',
       };
     }
-
-    emitCartUpdated(sessionId, userId);
 
     return {
       success: true,
