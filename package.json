@@ -5,8 +5,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "nodemon",
-    "build": "npm install && tsc",
-    "postinstall": "tsc"
+    "build": "npm install && tsc"
   },
   "keywords": [],
   "author": "",
