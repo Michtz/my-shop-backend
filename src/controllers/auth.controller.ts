@@ -491,6 +491,7 @@ export const googleLogin = async (
             authProvider: user.authProvider,
           },
           refreshToken,
+          token: token,
         },
       });
     } catch (error) {
