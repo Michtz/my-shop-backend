@@ -26,6 +26,8 @@ export interface IUser extends Document {
   lastName: string;
   phoneNumber?: string;
   role: string;
+  googleId?: string;
+  authProvider: 'local' | 'google';
   refreshToken?: string;
   tokenVersion?: number;
   addresses: IAddress[];
@@ -88,6 +90,16 @@ export const userSchema = new Schema<IUser>(
       type: String,
       enum: ['customer', 'admin'],
       default: 'customer',
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
     },
     refreshToken: {
       type: String,

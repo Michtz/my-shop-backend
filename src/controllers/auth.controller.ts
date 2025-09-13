@@ -8,6 +8,15 @@ import {
 } from '../utils/cookie.utils';
 import { updateUser } from '../services/auth.service';
 import { AuthRequest } from '../models/auth.model';
+import { OAuth2Client } from 'google-auth-library';
+import { User } from '../models/user.model';
+import bcrypt from 'bcrypt';
+import {
+  generateToken,
+  generateRefreshToken,
+  storeRefreshToken,
+} from '../utils/jwt.utils';
+import * as SessionService from '../services/session.service';
 
 export const register = async (
   req: AuthRequest,
@@ -356,6 +365,146 @@ export const validateToken = async (
     res.status(500).json({
       success: false,
       error: 'Error validating token',
+    });
+  }
+};
+
+export const googleLogin = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { credential } = req.body;
+    const sessionId = req.cookies?.sessionId;
+
+    if (!credential) {
+      res.status(400).json({
+        success: false,
+        error: 'Google credential is required',
+      });
+      return;
+    }
+
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+
+      const payload = ticket.getPayload();
+
+      if (!payload) {
+        res.status(401).json({
+          success: false,
+          error: 'Invalid Google token',
+        });
+        return;
+      }
+
+      const {
+        sub: googleId,
+        email,
+        given_name: firstName,
+        family_name: lastName,
+      } = payload;
+
+      if (!email || !firstName || !lastName) {
+        res.status(400).json({
+          success: false,
+          error: 'Incomplete user information from Google',
+        });
+        return;
+      }
+
+      // Check if user exists with googleId or email
+      let user = await User.findOne({
+        $or: [{ googleId }, { email }],
+      });
+
+      if (!user) {
+        // Create new user with Google data
+        const hashedPassword = await bcrypt.hash(googleId, 10);
+
+        user = new User({
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          googleId,
+          authProvider: 'google',
+          role: 'customer',
+          tokenVersion: 0,
+        });
+
+        await user.save();
+      } else if (!user.googleId) {
+        // Link existing account with Google
+        user.googleId = googleId;
+        user.authProvider = 'google';
+        await user.save();
+      }
+
+      // Generate tokens
+      const token = generateToken({
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+      });
+
+      const refreshToken = generateRefreshToken({
+        id: user._id.toString(),
+        tokenVersion: user.tokenVersion || 0,
+      });
+
+      await storeRefreshToken(user._id.toString(), refreshToken);
+
+      // Handle session
+      let finalSessionId = sessionId;
+      if (!finalSessionId) {
+        const sessionResponse = await SessionService.createSession({
+          userId: user._id.toString(),
+        });
+        if (sessionResponse.success && sessionResponse.data) {
+          finalSessionId = sessionResponse.data._id.toString();
+        }
+      } else {
+        await SessionService.convertToAuthSession(
+          finalSessionId,
+          user._id.toString(),
+        );
+      }
+
+      // Set auth token cookie
+      setAuthTokenCookie(res, token);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          user: {
+            id: user._id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: user.role,
+            authProvider: user.authProvider,
+          },
+          refreshToken,
+        },
+      });
+    } catch (error) {
+      console.error('Google token verification error:', error);
+      res.status(401).json({
+        success: false,
+        error: 'Invalid Google token',
+      });
+    }
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error during Google login',
     });
   }
 };

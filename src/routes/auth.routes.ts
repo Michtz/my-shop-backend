@@ -8,6 +8,7 @@ import {
   changePassword,
   validateToken,
   updateUserController,
+  googleLogin,
 } from '../controllers/auth.controller';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthRequest } from '../models/auth.model';
@@ -21,6 +22,10 @@ router
 router
   .route('/login')
   .post((req: AuthRequest, res: Response) => login(req, res));
+
+router
+  .route('/google-login')
+  .post((req: AuthRequest, res: Response) => googleLogin(req, res));
 
 router
   .route('/refresh-token')
