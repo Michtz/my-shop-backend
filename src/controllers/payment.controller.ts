@@ -16,9 +16,11 @@ const validateSessionId = (sessionId: unknown): string => {
   return sessionId.trim();
 };
 
-const validatePaymentData = (data: any): { paymentIntentId: string; paymentMethodId?: string } => {
+const validatePaymentData = (
+  data: any,
+): { paymentIntentId: string; paymentMethodId?: string } => {
   const { paymentIntentId, paymentMethodId } = data;
-  
+
   if (typeof paymentIntentId !== 'string' || !paymentIntentId.trim()) {
     throw new Error('Payment Intent ID is required and must be a valid string');
   }
@@ -29,7 +31,7 @@ const validatePaymentData = (data: any): { paymentIntentId: string; paymentMetho
 
   return {
     paymentIntentId: paymentIntentId.trim(),
-    paymentMethodId: paymentMethodId?.trim()
+    paymentMethodId: paymentMethodId?.trim(),
   };
 };
 
@@ -45,7 +47,9 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
 
     // Validate cart total
     if (cartResult.data.total <= 0) {
-      res.status(400).json({ success: false, error: 'Cart total must be greater than 0' });
+      res
+        .status(400)
+        .json({ success: false, error: 'Cart total must be greater than 0' });
       return;
     }
 
@@ -65,6 +69,44 @@ export const createPaymentIntent = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: 'Server error' });
   }
 };
+export const getPaymentInfo = async (req: Request, res: Response) => {
+  try {
+    const { paymentIntentId } = req.params;
+
+    if (!paymentIntentId || typeof paymentIntentId !== 'string') {
+      res.status(400).json({
+        success: false,
+        error: 'Payment Intent ID is required',
+      });
+      return;
+    }
+
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    const paymentInfo = {
+      id: paymentIntent.id,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency,
+      status: paymentIntent.status,
+      created: paymentIntent.created,
+      clientSecret: paymentIntent.client_secret,
+      paymentMethod: paymentIntent.payment_method,
+      metadata: paymentIntent.metadata,
+    };
+
+    res.status(200).json({
+      success: true,
+      data: paymentInfo,
+    });
+  } catch (error) {
+    console.error('Error retrieving payment info:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve payment information',
+    });
+  }
+};
+
 export const confirmPayment = async (req: Request, res: Response) => {
   try {
     const sessionId = validateSessionId(req.params.sessionId);
@@ -119,7 +161,6 @@ export const confirmPayment = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Payment confirmation error:', error);
     res.status(500).json({
       success: false,
       error: 'Server error during payment confirmation',

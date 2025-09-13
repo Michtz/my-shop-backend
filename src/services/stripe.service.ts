@@ -18,7 +18,10 @@ export const createPaymentIntent = async (
 
     return {
       success: true,
-      data: { clientSecret: paymentIntent.client_secret },
+      data: {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      },
     };
   } catch (error) {
     return {
