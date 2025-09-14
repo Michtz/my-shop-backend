@@ -89,7 +89,6 @@ export const login = async (req: AuthRequest, res: Response): Promise<void> => {
     }
 
     const result = await AuthService.login(email, password, sessionId);
-    console.log('result of authservice 1111', result);
     if (!result.success) {
       res.status(401).json(result);
       return;

@@ -335,7 +335,6 @@ export const updateUser = async (
       user.addresses = updateData.addresses;
     if (updateData.paymentInfo !== undefined)
       user.paymentInfo = updateData.paymentInfo;
-    console.log(user);
     await user.save();
 
     return {

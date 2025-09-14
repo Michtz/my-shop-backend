@@ -20,15 +20,6 @@ export const uploadProductImage = async (
   file: any,
 ): Promise<CloudinaryResponse> => {
   try {
-    console.log('📸 Starting image upload:', {
-      filename: file.filename,
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      hasBuffer: !!file.buffer,
-      bufferLength: file.buffer?.length,
-    });
-
     if (!file.buffer) {
       throw new Error('No file buffer available');
     }
